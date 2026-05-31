@@ -12,4 +12,5 @@ public class ServiceRequestDto {
     private String category;
     @NotNull
     private String priority;
+    private Long departmentId;
 }

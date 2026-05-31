@@ -18,13 +18,31 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-            String email = claims.getSubject();
-            String role = claims.get("role", String.class);
-            var auth = new UsernamePasswordAuthenticationToken(email, null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        } catch (Exception e) {
-            SecurityContextHolder.clearContext();
+
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+                Claims claims = Jwts.parser().verifyWith(key).build()
+                        .parseSignedClaims(token).getPayload();
+                String email = claims.getSubject();
+                String role = claims.get("role", String.class);
+                var auth = new UsernamePasswordAuthenticationToken(email, null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
+            }
         }
         filterChain.doFilter(request, response);
     }

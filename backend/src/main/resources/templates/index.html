@@ -1,41 +1,66 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>ServiceHub Dashboard</title>
+    <meta charset="UTF-8">
+    <title>ServiceHub</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
 <nav class="navbar navbar-dark bg-dark px-4">
-    <span class="navbar-brand">ServiceHub</span>
-    <div>
-        <a href="/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
-        <a href="/swagger-ui.html" class="btn btn-outline-light btn-sm">API Docs</a>
+    <a class="navbar-brand" href="/">ServiceHub</a>
+    <div id="nav-links">
+        <a href="/login" class="btn btn-outline-light btn-sm me-2">Login</a>
+        <a href="/register" class="btn btn-light btn-sm">Register</a>
     </div>
 </nav>
-<div class="container mt-4">
-    <h1>Welcome to ServiceHub</h1>
-    <p>Internal service request management system.</p>
-    <div class="row mt-4">
+
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1>ServiceHub</h1>
+        <p class="lead text-muted">Internal service request management for Amalitech</p>
+    </div>
+
+    <div class="row justify-content-center g-4">
         <div class="col-md-4">
-            <div class="card text-bg-primary mb-3"><div class="card-body">
-                <h5 class="card-title">Submit a Request</h5>
-                <p class="card-text">Create IT support, HR, or facilities requests.</p>
-                <a href="/swagger-ui.html#/service-request-controller/create" class="btn btn-light btn-sm">Submit via API</a>
-            </div></div>
+            <div class="card text-bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Submit a Request</h5>
+                    <p class="card-text">Report an IT issue, facilities problem, or HR inquiry. Requests are automatically routed to the right team.</p>
+                    <a href="/requests/submit" class="btn btn-light btn-sm">Submit Request</a>
+                </div>
+            </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-bg-success mb-3"><div class="card-body">
-                <h5 class="card-title">Track Requests</h5>
-                <p class="card-text">Monitor status and SLA compliance.</p>
-            </div></div>
+            <div class="card text-bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Track Requests</h5>
+                    <p class="card-text">Monitor the status of your requests, see SLA deadlines, and view full history.</p>
+                    <a href="/requests" class="btn btn-light btn-sm">View Requests</a>
+                </div>
+            </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-bg-info mb-3"><div class="card-body">
-                <h5 class="card-title">Analytics</h5>
-                <p class="card-text">View resolution metrics and trends.</p>
-            </div></div>
+            <div class="card text-bg-info h-100">
+                <div class="card-body">
+                    <h5 class="card-title">API Docs</h5>
+                    <p class="card-text">Explore all REST endpoints with the interactive Swagger UI documentation.</p>
+                    <a href="/swagger-ui/index.html" class="btn btn-light btn-sm">Open Swagger</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    // If already logged in, update nav to show user name and logout
+    const token = localStorage.getItem('token');
+    if (token) {
+        document.getElementById('nav-links').innerHTML = `
+            <span class="text-light me-3 small">${localStorage.getItem('fullName')}</span>
+            <a href="/requests" class="btn btn-outline-light btn-sm me-2">My Requests</a>
+            <button onclick="localStorage.clear(); location.reload();" class="btn btn-light btn-sm">Logout</button>
+        `;
+    }
+</script>
 </body>
 </html>

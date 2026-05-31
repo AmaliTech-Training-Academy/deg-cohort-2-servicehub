@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ServiceHub - Requests</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .badge-OPEN { background-color: #0d6efd; }
+        .badge-ASSIGNED { background-color: #6f42c1; }
+        .badge-IN_PROGRESS { background-color: #fd7e14; }
+        .badge-RESOLVED { background-color: #198754; }
+        .badge-CLOSED { background-color: #6c757d; }
+        .priority-CRITICAL { color: #dc3545; font-weight: bold; }
+        .priority-HIGH { color: #fd7e14; }
+        .priority-MEDIUM { color: #ffc107; }
+        .priority-LOW { color: #198754; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark px-4 mb-4">
+    <a class="navbar-brand" href="/">ServiceHub</a>
+    <div class="d-flex align-items-center gap-3">
+        <span id="user-name" class="text-light small"></span>
+        <a href="/requests/submit" class="btn btn-success btn-sm">+ New Request</a>
+        <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0" id="page-title">Service Requests</h5>
+        <div class="btn-group btn-group-sm" id="view-toggle"></div>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-auto">
+            <select id="filter-status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                <option>OPEN</option><option>ASSIGNED</option>
+                <option>IN_PROGRESS</option><option>RESOLVED</option><option>CLOSED</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <select id="filter-category" class="form-select form-select-sm">
+                <option value="">All Categories</option>
+                <option>IT_SUPPORT</option><option>FACILITIES</option><option>HR_REQUEST</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <select id="filter-priority" class="form-select form-select-sm">
+                <option value="">All Priorities</option>
+                <option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button onclick="applyFilters()" class="btn btn-primary btn-sm">Filter</button>
+            <button onclick="resetFilters()" class="btn btn-outline-secondary btn-sm">Reset</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th><th>Title</th><th>Category</th><th>Priority</th>
+                    <th>Status</th><th>Department</th><th>Submitted By</th>
+                    <th>Created</th><th>SLA Deadline</th><th></th>
+                </tr>
+            </thead>
+            <tbody id="requests-body">
+                <tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav>
+        <ul class="pagination pagination-sm justify-content-center" id="pagination"></ul>
+    </nav>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/login';
+
+    const role = localStorage.getItem('role');
+    let viewMode = 'mine'; // 'mine' or 'all'
+    let currentPage = 0;
+    let filterStatus = '', filterCategory = '', filterPriority = '';
+
+    document.getElementById('user-name').textContent = localStorage.getItem('fullName') + ' (' + role + ')';
+
+    // Show view toggle for agents/managers
+    if (role === 'AGENT' || role === 'MANAGER') {
+        const toggle = document.getElementById('view-toggle');
+        toggle.innerHTML = `
+            <button class="btn btn-sm btn-primary active" id="btn-mine" onclick="switchView('mine')">My Requests</button>
+            <button class="btn btn-sm btn-outline-primary" id="btn-all" onclick="switchView('all')">All Requests</button>
+        `;
+    }
+
+    function switchView(mode) {
+        viewMode = mode;
+        currentPage = 0;
+        document.getElementById('btn-mine').className = mode === 'mine' ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline-primary';
+        document.getElementById('btn-all').className = mode === 'all' ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline-primary';
+        loadRequests();
+    }
+
+    function applyFilters() {
+        filterStatus = document.getElementById('filter-status').value;
+        filterCategory = document.getElementById('filter-category').value;
+        filterPriority = document.getElementById('filter-priority').value;
+        currentPage = 0;
+        loadRequests();
+    }
+
+    function resetFilters() {
+        filterStatus = filterCategory = filterPriority = '';
+        document.getElementById('filter-status').value = '';
+        document.getElementById('filter-category').value = '';
+        document.getElementById('filter-priority').value = '';
+        currentPage = 0;
+        loadRequests();
+    }
+
+    async function loadRequests() {
+        const endpoint = viewMode === 'mine' ? '/api/requests/my-requests' : '/api/requests';
+        const res = await fetch(`${endpoint}?page=${currentPage}&size=10`, {
+            headers: {'Authorization': 'Bearer ' + token}
+        });
+        if (res.status === 401) { window.location.href = '/login'; return; }
+        const data = await res.json();
+        renderTable(data);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('requests-body');
+        let rows = data.content || [];
+        // Client-side filtering
+        if (filterStatus) rows = rows.filter(r => r.status === filterStatus);
+        if (filterCategory) rows = rows.filter(r => r.category === filterCategory);
+        if (filterPriority) rows = rows.filter(r => r.priority === filterPriority);
+
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No requests found.</td></tr>';
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => `
+            <tr>
+                <td>${r.id}</td>
+                <td><a href="/requests/${r.id}">${r.title}</a>${r.isOverdue ? ' <span class="badge bg-danger">OVERDUE</span>' : ''}</td>
+                <td>${r.category.replace('_', ' ')}</td>
+                <td><span class="priority-${r.priority}">${r.priority}</span></td>
+                <td><span class="badge badge-${r.status}">${r.status}</span></td>
+                <td>${r.departmentName || '-'}</td>
+                <td>${r.requesterName}</td>
+                <td>${formatDate(r.createdAt)}</td>
+                <td>${r.slaDeadline ? formatDate(r.slaDeadline) : '-'}</td>
+                <td><a href="/requests/${r.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+            </tr>
+        `).join('');
+        renderPagination(data.totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        const pag = document.getElementById('pagination');
+        if (totalPages <= 1) { pag.innerHTML = ''; return; }
+        let html = `<li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goPage(${currentPage - 1})">Prev</a></li>`;
+        for (let i = 0; i < totalPages; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goPage(${i})">${i + 1}</a></li>`;
+        }
+        html += `<li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goPage(${currentPage + 1})">Next</a></li>`;
+        pag.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadRequests(); return false; }
+
+    function formatDate(dt) {
+        if (!dt) return '-';
+        return new Date(dt).toLocaleString();
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login';
+    }
+
+    loadRequests();
+</script>
+</body>
+</html>

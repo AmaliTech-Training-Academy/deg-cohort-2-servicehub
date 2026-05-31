@@ -1,7 +1,6 @@
 package com.servicehub.controller;
 
 import com.servicehub.dto.*;
-import com.servicehub.model.User;
 import com.servicehub.service.ServiceRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,14 @@ public class ServiceRequestController {
         return ResponseEntity.ok(requestService.getAllRequests(page, size));
     }
 
+    @GetMapping("/my-requests")
+    public ResponseEntity<Page<ServiceRequestResponse>> getMyRequests(
+            @AuthenticationPrincipal String email,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(requestService.getMyRequests(email, page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ServiceRequestResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(requestService.getRequestById(id));
@@ -31,19 +38,23 @@ public class ServiceRequestController {
     @PostMapping
     public ResponseEntity<ServiceRequestResponse> create(
             @Valid @RequestBody ServiceRequestDto dto,
-            @AuthenticationPrincipal User requester) {
-        return ResponseEntity.ok(requestService.createRequest(dto, requester));
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(requestService.createRequest(dto, email));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ServiceRequestResponse> update(
+            @PathVariable Long id,
+            @RequestBody UpdateRequestDto dto,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(requestService.updateRequest(id, dto, email));
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<ServiceRequestResponse> updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody StatusUpdateRequest request,
-            @AuthenticationPrincipal User agent) {
-        return ResponseEntity.ok(requestService.updateStatus(id, request, agent));
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(requestService.updateStatus(id, request, email));
     }
-
-    // TODO: Add assign endpoint - PUT /api/requests/{id}/assign
-    // TODO: Add my-requests endpoint - GET /api/requests/my-requests
-    // TODO: Add dashboard stats endpoint - GET /api/requests/dashboard
 }
