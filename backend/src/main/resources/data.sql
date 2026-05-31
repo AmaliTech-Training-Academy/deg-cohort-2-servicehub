@@ -15,9 +15,9 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Seed admin/agent users (password: password123)
 INSERT INTO users (id, email, full_name, password, role, created_at) VALUES
-  (1, 'manager@amalitech.com', 'Manager User', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'MANAGER', NOW()),
-  (2, 'agent@amalitech.com', 'Support Agent', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'AGENT', NOW()),
-  (3, 'user@amalitech.com', 'Test User', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'EMPLOYEE', NOW())
+  (1, 'manager@amalitech.com', 'Manager User', '$2b$10$vWjAz8Gf3MTFwfr56qoWiOzXegvLYJ766e3E0jU8o8syHFLYR/pNG', 'MANAGER', NOW()),
+  (2, 'agent@amalitech.com', 'Support Agent', '$2b$10$vWjAz8Gf3MTFwfr56qoWiOzXegvLYJ766e3E0jU8o8syHFLYR/pNG', 'AGENT', NOW()),
+  (3, 'user@amalitech.com', 'Test User', '$2b$10$vWjAz8Gf3MTFwfr56qoWiOzXegvLYJ766e3E0jU8o8syHFLYR/pNG', 'EMPLOYEE', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequences so new inserts don't collide with seeded IDs
