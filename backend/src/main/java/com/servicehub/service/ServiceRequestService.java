@@ -45,9 +45,9 @@ public class ServiceRequestService {
         Department department = departmentRepository.findByCategory(category).orElse(null);
 
         LocalDateTime now = LocalDateTime.now();
-        SlaPolicy policy = slaPolicyRepository.findByPriority(priority).orElse(null);
-        LocalDateTime slaDeadline      = policy != null ? now.plusHours(policy.getResolutionTimeHours()) : now.plusHours(24);
-        LocalDateTime responseDeadline = policy != null ? now.plusHours(policy.getResponseTimeHours())   : now.plusHours(8);
+        SlaPolicy policy = slaPolicyRepository.findByCategoryAndPriority(category, priority).orElse(null);
+        LocalDateTime resolutionDeadline = policy != null ? now.plusHours(policy.getResolutionTimeHours()) : now.plusHours(24);
+        LocalDateTime responseDeadline   = policy != null ? now.plusHours(policy.getResponseTimeHours())  : now.plusHours(4);
 
         ServiceRequest req = ServiceRequest.builder()
                 .title(dto.getTitle())
@@ -57,7 +57,7 @@ public class ServiceRequestService {
                 .status(RequestStatus.OPEN)
                 .requester(requester)
                 .department(department)
-                .slaDeadline(slaDeadline)
+                .slaDeadline(resolutionDeadline)
                 .responseDeadline(responseDeadline)
                 .createdAt(now)
                 .updatedAt(now)
@@ -85,7 +85,9 @@ public class ServiceRequestService {
         if (dto.getPriority() != null) {
             Priority priority = Priority.valueOf(dto.getPriority());
             req.setPriority(priority);
-            slaPolicyRepository.findByPriority(priority).ifPresent(p -> {
+        }
+        if (dto.getCategory() != null || dto.getPriority() != null) {
+            slaPolicyRepository.findByCategoryAndPriority(req.getCategory(), req.getPriority()).ifPresent(p -> {
                 req.setSlaDeadline(req.getCreatedAt().plusHours(p.getResolutionTimeHours()));
                 req.setResponseDeadline(req.getCreatedAt().plusHours(p.getResponseTimeHours()));
             });
@@ -105,10 +107,13 @@ public class ServiceRequestService {
 
         LocalDateTime now = LocalDateTime.now();
         req.setStatus(newStatus);
+        req.setAssignedTo(agent);
         req.setUpdatedAt(now);
-        if (newStatus == RequestStatus.ASSIGNED) {
-            req.setAssignedTo(agent);
-            if (req.getFirstResponseAt() == null) req.setFirstResponseAt(now);
+        if (newStatus == RequestStatus.ASSIGNED && req.getFirstResponseAt() == null) {
+            req.setFirstResponseAt(now);
+        }
+        if (newStatus == RequestStatus.RESOLVED) {
+            req.setResolvedAt(now);
         }
         if (newStatus == RequestStatus.RESOLVED) req.setResolvedAt(now);
 
@@ -126,27 +131,12 @@ public class ServiceRequestService {
         if (!valid) throw new RuntimeException("Invalid status transition: " + current + " -> " + next);
     }
 
-    public ServiceRequestResponse toResponse(ServiceRequest req) {
+    private ServiceRequestResponse toResponse(ServiceRequest req) {
         LocalDateTime now = LocalDateTime.now();
-        boolean completed = req.getStatus() == RequestStatus.RESOLVED
-                || req.getStatus() == RequestStatus.CLOSED;
-        boolean overdue         = !completed && req.getSlaDeadline() != null
-                                  && now.isAfter(req.getSlaDeadline());
-        boolean responseOverdue = !completed && req.getResponseDeadline() != null
-                                  && req.getFirstResponseAt() == null
+        boolean active = req.getStatus() != RequestStatus.RESOLVED && req.getStatus() != RequestStatus.CLOSED;
+        boolean overdue         = active && req.getSlaDeadline() != null      && now.isAfter(req.getSlaDeadline());
+        boolean responseOverdue = active && req.getResponseDeadline() != null && req.getFirstResponseAt() == null
                                   && now.isAfter(req.getResponseDeadline());
-
-        String slaStatus;
-        if (completed)            slaStatus = "COMPLETED";
-        else if (overdue)         slaStatus = "RESOLUTION_BREACHED";
-        else if (responseOverdue) slaStatus = "RESPONSE_BREACHED";
-        else                      slaStatus = "ON_TRACK";
-
-        Long responseTimeMinutes = req.getFirstResponseAt() != null && req.getCreatedAt() != null
-                ? ChronoUnit.MINUTES.between(req.getCreatedAt(), req.getFirstResponseAt()) : null;
-        Long resolutionTimeMinutes = req.getResolvedAt() != null && req.getCreatedAt() != null
-                ? ChronoUnit.MINUTES.between(req.getCreatedAt(), req.getResolvedAt()) : null;
-
         return ServiceRequestResponse.builder()
                 .id(req.getId())
                 .title(req.getTitle())

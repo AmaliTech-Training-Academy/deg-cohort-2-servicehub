@@ -5,7 +5,15 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-@Entity @Table(name = "service_requests")
+@Entity
+@Table(name = "service_requests", indexes = {
+        @Index(name = "idx_sr_status",       columnList = "status"),
+        @Index(name = "idx_sr_category",     columnList = "category"),
+        @Index(name = "idx_sr_requester",    columnList = "requester_id"),
+        @Index(name = "idx_sr_assigned",     columnList = "assigned_to_id"),
+        @Index(name = "idx_sr_sla_deadline", columnList = "sla_deadline"),
+        @Index(name = "idx_sr_created_at",   columnList = "created_at")
+})
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class ServiceRequest {
 
