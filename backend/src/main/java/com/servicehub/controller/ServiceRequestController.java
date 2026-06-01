@@ -90,7 +90,7 @@ public class ServiceRequestController {
     })
     public ResponseEntity<ServiceRequestResponse> update(
             @PathVariable Long id,
-            @RequestBody UpdateRequestDto dto,
+            @Valid @RequestBody UpdateRequestDto dto,
             @AuthenticationPrincipal String email) {
         return ResponseEntity.ok(requestService.updateRequest(id, dto, email));
     }
