@@ -1,8 +1,6 @@
 # CODEOWNERS — ServiceHub Team 3
 #
 # Maps file paths to the team member responsible for reviewing PRs that touch them.
-# Replace each placeholder with the actual GitHub username of the team member.
-#
 # Format:  <path>   @github-username
 
 # ── Request management (Backend A — David Muhire) ────────────────────────────
@@ -10,25 +8,25 @@
 /backend/src/main/java/com/servicehub/controller/ServiceRequestController.java  @1MuhireDavid
 
 # ── Workflow & SLA (Backend B — Kevine Iradukunda) ───────────────────────────
-/backend/src/main/java/com/servicehub/service/WorkflowService.java  @iradukunda54
-/backend/src/main/java/com/servicehub/service/SlaService.java       @iradukunda54
+/backend/src/main/java/com/servicehub/service/WorkflowService.java  @Iradukunda54
+/backend/src/main/java/com/servicehub/service/SlaService.java       @Iradukunda54
 
 # ── Auth & Dashboard (Backend C — Prince Honore Makuza) ──────────────────────
-# TODO: replace @prince-makuza with Prince's real GitHub username
-/backend/src/main/java/com/servicehub/service/AuthService.java       @prince-makuza
-/backend/src/main/java/com/servicehub/service/DashboardService.java  @prince-makuza
-/backend/src/main/java/com/servicehub/controller/DashboardController.java  @prince-makuza
-/backend/src/main/java/com/servicehub/controller/AuthController.java       @prince-makuza
+# TODO: replace @prince-makuza with Prince's real GitHub username once provided
+/backend/src/main/java/com/servicehub/service/AuthService.java            @prince-makuza
+/backend/src/main/java/com/servicehub/service/DashboardService.java       @prince-makuza
+/backend/src/main/java/com/servicehub/controller/DashboardController.java @prince-makuza
+/backend/src/main/java/com/servicehub/controller/AuthController.java      @prince-makuza
 
-# ── Frontend templates (Hassan Adelani) ──────────────────────────────────────
-/backend/src/main/resources/templates/  @Hassan-Adelani-Luqman
+# ── Frontend (Hassan Adelani) ─────────────────────────────────────────────────
+/frontend/ @Hassan-Adelani-Luqman
 
 # ── QA & Data Engineering (Nelly Teta Butera) ────────────────────────────────
 /qa/               @nellybutera
 /data-engineering/ @nellybutera
 
 # ── DevOps & infrastructure (Justine Furaha) ─────────────────────────────────
-/devops/            @furaha-justine
-/.github/workflows/ @furaha-justine
-/docker-compose.yml @furaha-justine
-/backend/src/main/resources/application.yml @furaha-justine
+/devops/            @Furaha-Justine
+/.github/workflows/ @Furaha-Justine
+/docker-compose.yml @Furaha-Justine
+/backend/src/main/resources/application.yml @Furaha-Justine
