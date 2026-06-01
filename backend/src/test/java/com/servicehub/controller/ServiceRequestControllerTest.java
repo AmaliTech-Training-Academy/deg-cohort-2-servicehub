@@ -42,9 +42,6 @@ class ServiceRequestControllerTest {
     @Autowired private ObjectMapper objectMapper;
     @MockBean  private ServiceRequestService requestService;
 
-    // -----------------------------------------------------------------------
-    // helpers
-    // -----------------------------------------------------------------------
 
     private String token(String email, String role) {
         SecretKey key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
@@ -80,9 +77,6 @@ class ServiceRequestControllerTest {
                 .build();
     }
 
-    // -----------------------------------------------------------------------
-    // GET /api/requests
-    // -----------------------------------------------------------------------
 
     @Test
     void getAllRequests_withAuth_returns200AndContent() throws Exception {
@@ -114,9 +108,6 @@ class ServiceRequestControllerTest {
         verify(requestService).getAllRequests(2, 5);
     }
 
-    // -----------------------------------------------------------------------
-    // GET /api/requests/my-requests
-    // -----------------------------------------------------------------------
 
     @Test
     void getMyRequests_withAuth_returns200() throws Exception {
@@ -147,9 +138,6 @@ class ServiceRequestControllerTest {
         verify(requestService).getMyRequests(eq("employee@test.com"), anyInt(), anyInt());
     }
 
-    // -----------------------------------------------------------------------
-    // GET /api/requests/{id}
-    // -----------------------------------------------------------------------
 
     @Test
     void getById_existingRequest_returns200WithDetails() throws Exception {
@@ -179,9 +167,6 @@ class ServiceRequestControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // -----------------------------------------------------------------------
-    // POST /api/requests
-    // -----------------------------------------------------------------------
 
     @Test
     void createRequest_validBody_returns200AndResponse() throws Exception {
@@ -308,9 +293,6 @@ class ServiceRequestControllerTest {
                 .andExpect(jsonPath("$.departmentName").value("HR"));
     }
 
-    // -----------------------------------------------------------------------
-    // PUT /api/requests/{id}
-    // -----------------------------------------------------------------------
 
     @Test
     void updateRequest_byOwner_returns200() throws Exception {
@@ -364,9 +346,6 @@ class ServiceRequestControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // -----------------------------------------------------------------------
-    // PUT /api/requests/{id}/status
-    // -----------------------------------------------------------------------
 
     @Test
     void updateStatus_validTransition_returns200WithNewStatus() throws Exception {

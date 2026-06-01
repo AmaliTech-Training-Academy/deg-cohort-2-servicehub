@@ -95,9 +95,6 @@ class ServiceRequestServiceTest {
                 .build();
     }
 
-    // -----------------------------------------------------------------------
-    // createRequest
-    // -----------------------------------------------------------------------
 
     @Test
     void createRequest_validDto_returnsResponseWithOpenStatus() {
@@ -271,9 +268,6 @@ class ServiceRequestServiceTest {
         assertThat(result.getContent()).isEmpty();
     }
 
-    // -----------------------------------------------------------------------
-    // getMyRequests
-    // -----------------------------------------------------------------------
 
     @Test
     void getMyRequests_returnsOnlyRequestsForThatUser() {
@@ -296,9 +290,6 @@ class ServiceRequestServiceTest {
                 .hasMessage("User not found");
     }
 
-    // -----------------------------------------------------------------------
-    // getRequestById
-    // -----------------------------------------------------------------------
 
     @Test
     void getRequestById_existingId_returnsResponse() {
@@ -321,9 +312,6 @@ class ServiceRequestServiceTest {
                 .hasMessage("Request not found");
     }
 
-    // -----------------------------------------------------------------------
-    // updateRequest
-    // -----------------------------------------------------------------------
 
     @Test
     void updateRequest_ownerCanUpdateTitle() {
@@ -420,9 +408,6 @@ class ServiceRequestServiceTest {
         assertThat(result.getTitle()).isEqualTo("Fix printer");
     }
 
-    // -----------------------------------------------------------------------
-    // updateStatus — valid transitions
-    // -----------------------------------------------------------------------
 
     @Test
     void updateStatus_openToAssigned_succeeds() {
@@ -484,9 +469,6 @@ class ServiceRequestServiceTest {
         assertThat(result.getStatus()).isEqualTo("CLOSED");
     }
 
-    // -----------------------------------------------------------------------
-    // updateStatus — invalid transitions
-    // -----------------------------------------------------------------------
 
     @Test
     void updateStatus_openToInProgress_throwsInvalidTransition() {
@@ -526,9 +508,6 @@ class ServiceRequestServiceTest {
                 .hasMessageContaining("Invalid status transition");
     }
 
-    // -----------------------------------------------------------------------
-    // isOverdue flag
-    // -----------------------------------------------------------------------
 
     @Test
     void getRequestById_openAndPastDeadline_isOverdueTrue() {
@@ -566,9 +545,6 @@ class ServiceRequestServiceTest {
         assertThat(service.getRequestById(1L).getIsOverdue()).isFalse();
     }
 
-    // -----------------------------------------------------------------------
-    // helpers
-    // -----------------------------------------------------------------------
 
     private ServiceRequest requestWithStatus(RequestStatus status) {
         long id = switch (status) {
