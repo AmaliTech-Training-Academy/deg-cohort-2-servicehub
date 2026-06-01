@@ -42,7 +42,15 @@ public class ServiceRequest {
     @JoinColumn(name = "requester_id", nullable = false)
     private User requester;
 
+    @Column(name = "sla_deadline")
     private LocalDateTime slaDeadline;
+
+    @Column(name = "response_deadline")
+    private LocalDateTime responseDeadline;
+
+    @Column(name = "first_response_at")
+    private LocalDateTime firstResponseAt;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;

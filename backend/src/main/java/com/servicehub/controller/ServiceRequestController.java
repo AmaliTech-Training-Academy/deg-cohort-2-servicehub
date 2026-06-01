@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -95,6 +96,7 @@ public class ServiceRequestController {
         return ResponseEntity.ok(requestService.updateRequest(id, dto, email));
     }
 
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
     @PutMapping("/{id}/status")
     @Operation(summary = "Advance request status (AGENT or MANAGER only)",
             description = "Valid transitions: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED")
