@@ -3,6 +3,9 @@ package com.servicehub.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servicehub.config.SecurityConfig;
 import com.servicehub.dto.*;
+import com.servicehub.exception.BadRequestException;
+import com.servicehub.exception.ForbiddenException;
+import com.servicehub.exception.NotFoundException;
 import com.servicehub.service.ServiceRequestService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -161,12 +164,12 @@ class ServiceRequestControllerTest {
     }
 
     @Test
-    void getById_nonExistentRequest_returns400WithErrorMessage() throws Exception {
-        when(requestService.getRequestById(99L)).thenThrow(new RuntimeException("Request not found"));
+    void getById_nonExistentRequest_returns404WithErrorMessage() throws Exception {
+        when(requestService.getRequestById(99L)).thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(get("/api/requests/99")
                         .header("Authorization", "Bearer " + employeeToken()))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Request not found"));
     }
 
@@ -330,7 +333,7 @@ class ServiceRequestControllerTest {
         dto.setTitle("Sneaky update");
 
         when(requestService.updateRequest(any(), any(), any()))
-                .thenThrow(new RuntimeException("Not authorized to update this request"));
+                .thenThrow(new ForbiddenException("Not authorized to update this request"));
 
         mockMvc.perform(put("/api/requests/1")
                         .header("Authorization", "Bearer " + employeeToken())
@@ -341,15 +344,15 @@ class ServiceRequestControllerTest {
     }
 
     @Test
-    void updateRequest_requestNotFound_returns400() throws Exception {
+    void updateRequest_requestNotFound_returns404() throws Exception {
         when(requestService.updateRequest(eq(99L), any(), any()))
-                .thenThrow(new RuntimeException("Request not found"));
+                .thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(put("/api/requests/99")
                         .header("Authorization", "Bearer " + employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Request not found"));
     }
 
@@ -388,7 +391,7 @@ class ServiceRequestControllerTest {
         update.setNewStatus("IN_PROGRESS");
 
         when(requestService.updateStatus(any(), any(), any()))
-                .thenThrow(new RuntimeException("Invalid status transition: OPEN -> IN_PROGRESS"));
+                .thenThrow(new BadRequestException("Invalid status transition: OPEN -> IN_PROGRESS"));
 
         mockMvc.perform(put("/api/requests/1/status")
                         .header("Authorization", "Bearer " + agentToken())

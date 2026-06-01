@@ -1,6 +1,9 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
+import com.servicehub.exception.BadRequestException;
+import com.servicehub.exception.ForbiddenException;
+import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
@@ -239,7 +242,7 @@ class ServiceRequestServiceTest {
         when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createRequest(dto, "nobody@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("User not found");
     }
 
@@ -289,7 +292,7 @@ class ServiceRequestServiceTest {
         when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getMyRequests("nobody@test.com", 0, 10))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("User not found");
     }
 
@@ -314,7 +317,7 @@ class ServiceRequestServiceTest {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getRequestById(99L))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
 
@@ -359,7 +362,7 @@ class ServiceRequestServiceTest {
         when(userRepository.findByEmail("other@test.com")).thenReturn(Optional.of(otherEmployee));
 
         assertThatThrownBy(() -> service.updateRequest(1L, dto, "other@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("Not authorized");
     }
 
@@ -399,7 +402,7 @@ class ServiceRequestServiceTest {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateRequest(99L, new UpdateRequestDto(), "employee@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
 
@@ -519,7 +522,7 @@ class ServiceRequestServiceTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus(targetStatus);
         assertThatThrownBy(() -> service.updateStatus(closed.getId(), update, "agent@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 
@@ -589,7 +592,7 @@ class ServiceRequestServiceTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus(targetStatus);
         assertThatThrownBy(() -> service.updateStatus(request.getId(), update, "agent@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 }
