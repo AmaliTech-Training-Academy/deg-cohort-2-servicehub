@@ -15,7 +15,7 @@ public class Department {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private RequestCategory category;
 
     private String contactEmail;
