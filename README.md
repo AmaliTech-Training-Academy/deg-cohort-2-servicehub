@@ -1,18 +1,41 @@
-# ServiceHub - Internal Service Request System
+# Project Name
 
-An internal service request management platform with intelligent routing, SLA tracking, and workflow automation.
+## Overview
+Monorepo containing backend, frontend, QA and DevOps code.
 
-## Architecture
-- Spring Boot 3.2 + PostgreSQL + Thymeleaf
-- JWT authentication, Role-based access control
-- Port 8080 (backend), Port 5432 (postgres)
+## Folder Structure
+  backend/   Spring Boot API        → backend team
+  frontend/  Frontend app           → frontend team
+  qa/        Tests and QA scripts   → QA team
+  devops/    Infrastructure and CI  → DevOps team
 
-## Domain Split
-### Dev A: Request Management (RequestService, RequestController)
-### Dev B: Workflow/SLA (WorkflowService, SlaService, AssignmentService)
-### Dev C: Auth/Dashboard (AuthService, DashboardService)
+## Prerequisites
+- Docker Desktop: https://www.docker.com/products/docker-desktop
+- Git: https://git-scm.com
 
-## Quick Start: docker-compose up --build
+You do NOT need Java or Node installed locally.
+Docker handles everything.
 
-Default Users: emp@servicehub.com, agent@servicehub.com, mgr@servicehub.com (password123)
-Swagger: http://localhost:8080/swagger-ui.html
+## Run Locally
+  cp .env.example .env
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+  Backend:  http://localhost:8080/actuator/health
+  Frontend: http://localhost:3000
+
+  Stop: docker compose down
+
+## Branch Naming
+  feature/backend/name
+  feature/frontend/name
+  feature/devops/name
+  fix/backend/name
+  fix/frontend/name
+
+## Contributing
+1. Branch from dev
+2. Open PR targeting dev
+3. Get 1 approval
+4. Merge
+
+Never push directly to dev or main.
