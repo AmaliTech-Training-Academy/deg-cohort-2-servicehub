@@ -2,6 +2,9 @@
   ServiceHub — Team 3 | Pull Request Template
   Keep your PR focused: one feature, one bug fix, or one logical unit of work.
   Aim for under 200 lines of changes. Smaller PRs get faster, better reviews.
+
+  For bug fixes, use the bug template instead:
+  https://github.com/AmaliTech-Training-Academy/deg-cohort-2-servicehub/compare/main...YOUR-BRANCH?template=bug_fix.md
 -->
 
 ## What does this PR do?
@@ -22,6 +25,38 @@ Closes #
 - [ ] DevOps — Docker, CI/CD, infrastructure
 - [ ] Documentation — README, comments, docs only
 
+## API changes
+
+<!-- Delete this section if no API endpoints were added or modified. -->
+
+| Method | Endpoint | Change | Auth required |
+|--------|----------|--------|---------------|
+| GET/POST/PUT/DELETE | `/api/...` | Added / Modified / Removed | EMPLOYEE / AGENT / MANAGER / Public |
+
+**Request body changes** (if any):
+```json
+
+```
+
+**Response shape changes** (if any):
+```json
+
+```
+
+> If this is a breaking change to an existing endpoint, check the box below and describe the impact.
+- [ ] This is a breaking change — existing callers will need to update
+
+## Database changes
+
+<!-- Delete this section if no DB changes were made. -->
+
+- [ ] New table or column added
+- [ ] Existing column modified or removed
+- [ ] New index added
+- [ ] Data migration required
+
+Describe what changed and why:
+
 ## How to test
 
 <!--
@@ -37,6 +72,10 @@ Closes #
 
 Expected result:
 
+## Screenshots
+
+<!-- Required for any change that affects an HTML template or UI. Delete this section if not applicable. -->
+
 ## Author checklist
 
 <!--
@@ -51,10 +90,6 @@ Expected result:
 - [ ] No secrets, passwords, API keys, or `.env` files are committed
 - [ ] I have assigned my designated code reviewer
 - [ ] The PR has fewer than 200 lines of changes — if not, I have split it
-
-## Screenshots
-
-<!-- Required for any change that affects an HTML template or UI. Delete this section if not applicable. -->
 
 ---
 
@@ -77,6 +112,7 @@ Expected result:
 **During the review — in priority order**
 - [ ] **Correctness** — does the code do what the description says? Are there logic errors or unhandled edge cases?
 - [ ] **Security** — any hardcoded credentials, SQL injection risks, or unvalidated inputs?
+- [ ] **API contract** — if endpoints changed, does the response shape match what the frontend/tests expect?
 - [ ] **Readability** — can you understand the code without asking the author? Are names clear?
 - [ ] **Structure** — is logic organised sensibly? Is there unnecessary duplication? Are responsibilities separated?
 - [ ] **Tests** — are there tests for the new behaviour? Do existing tests still pass?
