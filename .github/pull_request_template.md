@@ -2,9 +2,6 @@
   ServiceHub — Team 3 | Pull Request Template
   Keep your PR focused: one feature, one bug fix, or one logical unit of work.
   Aim for under 200 lines of changes. Smaller PRs get faster, better reviews.
-
-  For bug fixes, use the bug template instead:
-  https://github.com/AmaliTech-Training-Academy/deg-cohort-2-servicehub/compare/main...YOUR-BRANCH?template=bug_fix.md
 -->
 
 ## What does this PR do?
@@ -25,6 +22,30 @@ Closes #
 - [ ] DevOps — Docker, CI/CD, infrastructure
 - [ ] Documentation — README, comments, docs only
 
+## Bug fix details
+
+<!--
+  Bug fixes only — delete this entire section if this is not a bug fix.
+-->
+
+**Root cause:**
+<!-- What was the actual cause? "the status transition check was missing a null guard" not just "there was a bug". -->
+
+**How to reproduce (before this fix):**
+1.
+2.
+3.
+
+Expected: 
+Actual (broken behaviour): 
+
+**Regression risk:**
+- [ ] Low — isolated change, no shared logic touched
+- [ ] Medium — touches shared service or utility
+- [ ] High — core workflow affected (describe below)
+
+<!-- If High, describe what else could be impacted: -->
+
 ## API changes
 
 <!-- Delete this section if no API endpoints were added or modified. -->
@@ -43,7 +64,6 @@ Closes #
 
 ```
 
-> If this is a breaking change to an existing endpoint, check the box below and describe the impact.
 - [ ] This is a breaking change — existing callers will need to update
 
 ## Database changes
@@ -117,6 +137,11 @@ Expected result:
 - [ ] **Structure** — is logic organised sensibly? Is there unnecessary duplication? Are responsibilities separated?
 - [ ] **Tests** — are there tests for the new behaviour? Do existing tests still pass?
 - [ ] **Style** — does it follow the team's conventions? (Lowest priority — do not nitpick formatting)
+
+**For bug fixes specifically**
+- [ ] Does the fix address the root cause, not just the symptom?
+- [ ] Could this same bug exist elsewhere in similar code?
+- [ ] Is the regression risk assessment accurate?
 
 **After the review**
 - [ ] Left at least 2 meaningful comments (findings, suggestions, or genuine praise)
