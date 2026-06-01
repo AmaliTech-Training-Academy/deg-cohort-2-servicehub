@@ -33,6 +33,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public API routes
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/departments").permitAll()
                 // Swagger
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                 // HTML view pages — use AntPathRequestMatcher to avoid MVC type-coercion
