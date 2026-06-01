@@ -36,7 +36,14 @@ INSERT INTO sla_policies (id, category, priority, response_time_hours, resolutio
 
 -- Replace priority-only unique constraint with composite (category, priority)
 ALTER TABLE sla_policies DROP CONSTRAINT IF EXISTS sla_policies_priority_key;
-ALTER TABLE sla_policies ADD CONSTRAINT uq_sla_category_priority UNIQUE (category, priority);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'uq_sla_category_priority'
+    ) THEN
+        ALTER TABLE sla_policies ADD CONSTRAINT uq_sla_category_priority UNIQUE (category, priority);
+    END IF;
+END $$;
 
 -- Reset sequence for new row count
 SELECT setval('sla_policies_id_seq', (SELECT MAX(id) FROM sla_policies));
