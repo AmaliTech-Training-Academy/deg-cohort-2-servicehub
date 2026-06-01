@@ -41,10 +41,8 @@ public class ServiceRequestService {
         RequestCategory category = RequestCategory.valueOf(dto.getCategory());
         Priority priority = Priority.valueOf(dto.getPriority());
 
-        // Auto-route to the department matching this category
         Department department = departmentRepository.findByCategory(category).orElse(null);
 
-        // Compute SLA deadlines from the matching policy (category + priority)
         LocalDateTime now = LocalDateTime.now();
         SlaPolicy policy = slaPolicyRepository.findByCategoryAndPriority(category, priority).orElse(null);
         LocalDateTime resolutionDeadline = policy != null ? now.plusHours(policy.getResolutionTimeHours()) : now.plusHours(24);
@@ -91,7 +89,6 @@ public class ServiceRequestService {
             Priority priority = Priority.valueOf(dto.getPriority());
             req.setPriority(priority);
         }
-        // Recalculate both SLA deadlines whenever category or priority changed
         if (dto.getCategory() != null || dto.getPriority() != null) {
             slaPolicyRepository.findByCategoryAndPriority(req.getCategory(), req.getPriority()).ifPresent(p -> {
                 req.setSlaDeadline(req.getCreatedAt().plusHours(p.getResolutionTimeHours()));
