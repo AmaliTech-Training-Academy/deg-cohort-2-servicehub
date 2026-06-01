@@ -1,0 +1,32 @@
+# CODEOWNERS — ServiceHub Team 3
+#
+# Maps file paths to the team member responsible for reviewing PRs that touch them.
+# Replace each placeholder with the actual GitHub username of the team member.
+#
+# Format:  <path>   @github-username
+
+# ── Request management (Backend A — David Muhire) ────────────────────────────
+/backend/src/main/java/com/servicehub/service/ServiceRequestService.java        @david-muhire
+/backend/src/main/java/com/servicehub/controller/ServiceRequestController.java  @david-muhire
+
+# ── Workflow & SLA (Backend B — Prince Honore Makuza) ────────────────────────
+/backend/src/main/java/com/servicehub/service/WorkflowService.java  @prince-makuza
+/backend/src/main/java/com/servicehub/service/SlaService.java       @prince-makuza
+
+# ── Auth & Dashboard (Backend C — Kevine Iradukunda) ─────────────────────────
+/backend/src/main/java/com/servicehub/service/AuthService.java       @kevine-iradukunda
+/backend/src/main/java/com/servicehub/service/DashboardService.java  @kevine-iradukunda
+/backend/src/main/java/com/servicehub/controller/DashboardController.java  @kevine-iradukunda
+/backend/src/main/java/com/servicehub/controller/AuthController.java       @kevine-iradukunda
+
+# ── Frontend templates (Hassan Adelani) ──────────────────────────────────────
+/backend/src/main/resources/templates/  @hassan-adelani
+
+# ── QA & Data Engineering (Nelly Teta Butera) ────────────────────────────────
+/qa/               @nelly-butera
+/data-engineering/ @nelly-butera
+
+# ── DevOps & infrastructure (Justine Furaha) ─────────────────────────────────
+/devops/           @justine-furaha
+/.github/workflows/ @justine-furaha
+/docker-compose.yml @justine-furaha
