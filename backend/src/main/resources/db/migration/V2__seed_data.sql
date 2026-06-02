@@ -14,10 +14,11 @@ INSERT INTO sla_policies (id, priority, response_time_hours, resolution_time_hou
 ON CONFLICT (id) DO NOTHING;
 
 -- Default users (password: password123, bcrypt-hashed)
+-- Default users (password: password123)
 INSERT INTO users (id, email, full_name, password, role, created_at) VALUES
-  (1, 'manager@amalitech.com', 'Manager User',  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'MANAGER',  NOW()),
-  (2, 'agent@amalitech.com',   'Support Agent', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'AGENT',    NOW()),
-  (3, 'user@amalitech.com',    'Test User',     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'EMPLOYEE', NOW())
+  (1, 'manager@amalitech.com', 'Manager User',  '$2a$10$hUnvmiJfNEEM9dYe0C1/zeW3eJ9NkfD/.gtVeSkjysbzr.38r6VAi', 'MANAGER',  NOW()),
+  (2, 'agent@amalitech.com',   'Support Agent', '$2a$10$hUnvmiJfNEEM9dYe0C1/zeW3eJ9NkfD/.gtVeSkjysbzr.38r6VAi', 'AGENT',    NOW()),
+  (3, 'user@amalitech.com',    'Test User',     '$2a$10$hUnvmiJfNEEM9dYe0C1/zeW3eJ9NkfD/.gtVeSkjysbzr.38r6VAi', 'EMPLOYEE', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequences so new inserts don't collide with seeded IDs
