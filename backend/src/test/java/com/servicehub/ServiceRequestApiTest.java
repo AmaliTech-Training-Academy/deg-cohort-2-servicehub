@@ -112,11 +112,11 @@ class ServiceRequestApiTest {
     }
 
     @Test
-    void register_duplicateEmail_returns400() throws Exception {
+    void register_duplicateEmail_returns409() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Dup\",\"email\":\"manager@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Email already in use"));
     }
 
