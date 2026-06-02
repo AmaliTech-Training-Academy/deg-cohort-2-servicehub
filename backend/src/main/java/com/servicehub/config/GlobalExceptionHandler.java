@@ -1,6 +1,7 @@
 package com.servicehub.config;
 
 import com.servicehub.exception.BadRequestException;
+import com.servicehub.exception.EmailAlreadyExistsException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)

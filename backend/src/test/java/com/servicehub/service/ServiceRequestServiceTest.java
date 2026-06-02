@@ -106,7 +106,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByPriority(Priority.HIGH)).thenReturn(Optional.of(highPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.HIGH)).thenReturn(Optional.of(highPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> {
             ServiceRequest r = inv.getArgument(0); r.setId(42L); return r;
         });
@@ -131,7 +131,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByPriority(Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -149,7 +149,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.FACILITIES)).thenReturn(Optional.of(facilitiesDept));
-        when(slaPolicyRepository.findByPriority(Priority.LOW)).thenReturn(Optional.of(lowPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.FACILITIES, Priority.LOW)).thenReturn(Optional.of(lowPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -167,7 +167,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.HR_REQUEST)).thenReturn(Optional.of(hrDept));
-        when(slaPolicyRepository.findByPriority(Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.HR_REQUEST, Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -185,7 +185,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByPriority(Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -203,7 +203,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByPriority(Priority.LOW)).thenReturn(Optional.of(lowPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.LOW)).thenReturn(Optional.of(lowPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -220,7 +220,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(any())).thenReturn(Optional.empty());
-        when(slaPolicyRepository.findByPriority(any())).thenReturn(Optional.empty());
+        when(slaPolicyRepository.findByCategoryAndPriority(any(), any())).thenReturn(Optional.empty());
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -377,12 +377,12 @@ class ServiceRequestServiceTest {
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
-        when(slaPolicyRepository.findByPriority(Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
+        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.updateRequest(1L, dto, "employee@test.com");
 
-        verify(slaPolicyRepository).findByPriority(Priority.CRITICAL);
+        verify(slaPolicyRepository).findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL);
     }
 
     @Test
