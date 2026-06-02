@@ -23,4 +23,5 @@ export const routes: Routes = [
     component: EmployeeDashboard,
     canActivate: [authGuard, roleGuard('EMPLOYEE')],
   },
+  { path: '**', redirectTo: 'login' },
 ];
