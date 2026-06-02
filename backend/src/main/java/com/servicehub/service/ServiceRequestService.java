@@ -1,7 +1,6 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
-import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;

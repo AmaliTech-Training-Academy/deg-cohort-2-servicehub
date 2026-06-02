@@ -7,6 +7,7 @@ import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.service.ServiceRequestService;
+import com.servicehub.service.SlaService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ class ServiceRequestControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @MockBean  private ServiceRequestService requestService;
+    @MockBean  private SlaService slaService;
 
 
     private String token(String email, String role) {
@@ -249,6 +251,7 @@ class ServiceRequestControllerTest {
     void createRequest_facilitiesCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Fix AC");
+        dto.setDescription("AC unit not working in room 201");
         dto.setCategory("FACILITIES");
         dto.setPriority("LOW");
 
@@ -273,6 +276,7 @@ class ServiceRequestControllerTest {
     void createRequest_hrCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Leave request");
+        dto.setDescription("Requesting annual leave approval for next week");
         dto.setCategory("HR_REQUEST");
         dto.setPriority("MEDIUM");
 
