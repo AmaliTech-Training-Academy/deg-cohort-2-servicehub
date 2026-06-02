@@ -3,6 +3,7 @@ package com.servicehub.config;
 import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.EmailAlreadyExistsException;
 import com.servicehub.exception.ForbiddenException;
+import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +48,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", "Invalid value: " + ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidTransition(InvalidStatusTransitionException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

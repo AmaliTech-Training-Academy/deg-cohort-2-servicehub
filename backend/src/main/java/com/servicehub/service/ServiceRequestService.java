@@ -1,7 +1,6 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
-import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
@@ -20,6 +19,7 @@ public class ServiceRequestService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final SlaPolicyRepository slaPolicyRepository;
+    private final WorkflowService workflowService;
     private final SlaService slaService;
 
     public Page<ServiceRequestResponse> getAllRequests(int page, int size) {
@@ -100,39 +100,7 @@ public class ServiceRequestService {
     }
 
     public ServiceRequestResponse updateStatus(Long id, StatusUpdateRequest update, String agentEmail) {
-        ServiceRequest req = requestRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Request not found"));
-        User agent = userRepository.findByEmail(agentEmail)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        RequestStatus newStatus = RequestStatus.valueOf(update.getNewStatus());
-        validateStatusTransition(req.getStatus(), newStatus);
-
-        LocalDateTime now = LocalDateTime.now();
-        req.setStatus(newStatus);
-        req.setUpdatedAt(now);
-        if (newStatus == RequestStatus.ASSIGNED) {
-            req.setAssignedTo(agent);
-            if (req.getFirstResponseAt() == null) req.setFirstResponseAt(now);
-        }
-        if (newStatus == RequestStatus.RESOLVED) {
-            req.setResolvedAt(now);
-        }
-
-        return toResponse(requestRepository.save(req));
-    }
-
-    private void validateStatusTransition(RequestStatus current, RequestStatus next) {
-        boolean valid = switch (current) {
-            case OPEN        -> next == RequestStatus.ASSIGNED;
-            case ASSIGNED    -> next == RequestStatus.IN_PROGRESS;
-            case IN_PROGRESS -> next == RequestStatus.RESOLVED;
-            case RESOLVED    -> next == RequestStatus.CLOSED;
-            case CLOSED      -> false;
-        };
-        if (!valid) {
-            throw new BadRequestException("Invalid status transition: " + current + " -> " + next);
-        }
+        return toResponse(workflowService.updateStatus(id, update.getNewStatus(), agentEmail));
     }
 
     public ServiceRequestResponse toResponse(ServiceRequest req) {
