@@ -302,7 +302,6 @@ class ServiceRequestControllerTest {
     void updateRequest_byOwner_returns200() throws Exception {
         UpdateRequestDto dto = new UpdateRequestDto();
         dto.setTitle("Updated title");
-        dto.setDescription("Updated description");
 
         when(requestService.updateRequest(eq(1L), any(), eq("employee@test.com")))
                 .thenReturn(sampleResponse());
@@ -318,7 +317,6 @@ class ServiceRequestControllerTest {
     void updateRequest_unauthorizedUser_returns403WithError() throws Exception {
         UpdateRequestDto dto = new UpdateRequestDto();
         dto.setTitle("Sneaky update");
-        dto.setDescription("Unauthorized update attempt");
 
         when(requestService.updateRequest(any(), any(), any()))
                 .thenThrow(new ForbiddenException("Not authorized to update this request"));
@@ -336,14 +334,10 @@ class ServiceRequestControllerTest {
         when(requestService.updateRequest(eq(99L), any(), any()))
                 .thenThrow(new NotFoundException("Request not found"));
 
-        UpdateRequestDto dto = new UpdateRequestDto();
-        dto.setTitle("Some title");
-        dto.setDescription("Some description");
-
         mockMvc.perform(put("/api/requests/99")
                         .header("Authorization", "Bearer " + employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content("{}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Request not found"));
     }
