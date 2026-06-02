@@ -4,6 +4,8 @@ import com.servicehub.dto.SlaPolicyUpdateDto;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.Priority;
+import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
@@ -47,6 +49,22 @@ public class SlaService {
             if (seen.add(r.getId())) all.add(r);
         }
         return all;
+    }
+
+    public LocalDateTime computeDeadline(RequestCategory category, Priority priority) {
+        return slaPolicyRepository.findByCategoryAndPriority(category, priority)
+                .map(p -> LocalDateTime.now().plusHours(p.getResolutionTimeHours()))
+                .orElse(LocalDateTime.now().plusHours(24));
+    }
+
+    public LocalDateTime computeResponseDeadline(RequestCategory category, Priority priority) {
+        return slaPolicyRepository.findByCategoryAndPriority(category, priority)
+                .map(p -> LocalDateTime.now().plusHours(p.getResponseTimeHours()))
+                .orElse(LocalDateTime.now().plusHours(4));
+    }
+
+    public List<ServiceRequest> getOverdueRequests() {
+        return getResolutionBreaches();
     }
 
     public List<SlaPolicy> getAllPolicies() {

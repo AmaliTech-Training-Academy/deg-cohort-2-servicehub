@@ -26,6 +26,7 @@ class WorkflowSlaServiceTest {
     @Mock UserRepository userRepository;
     @Mock DepartmentRepository departmentRepository;
     @Mock SlaPolicyRepository slaPolicyRepository;
+    @Mock SlaService slaService;
 
     @InjectMocks ServiceRequestService service;
 
@@ -132,11 +133,14 @@ class WorkflowSlaServiceTest {
 
     // ─── SLA Engine ─────────────────────────────────────────────────────────
 
-    @Test @DisplayName("createRequest computes both SLA deadlines from policy")
+    @Test @DisplayName("createRequest computes both SLA deadlines from SlaService")
     void createRequest_computesBothSlaDeadlines() {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByPriority(Priority.HIGH)).thenReturn(Optional.of(highPolicy));
+        when(slaService.computeDeadline(RequestCategory.IT_SUPPORT, Priority.HIGH))
+                .thenReturn(LocalDateTime.now().plusHours(4));
+        when(slaService.computeResponseDeadline(RequestCategory.IT_SUPPORT, Priority.HIGH))
+                .thenReturn(LocalDateTime.now().plusHours(1));
         when(requestRepository.save(any())).thenAnswer(i -> { ServiceRequest r = i.getArgument(0); r.setId(10L); return r; });
 
         ServiceRequestDto dto = new ServiceRequestDto();
