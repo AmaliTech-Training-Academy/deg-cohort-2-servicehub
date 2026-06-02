@@ -1,0 +1,27 @@
+# name: Deploy to DEV
+
+# on:
+#   push:
+#     branches: [dev]
+
+# jobs:
+#   deploy:
+#     name: Deploy to DEV server
+#     runs-on: ubuntu-latest
+#     environment: dev
+#     steps:
+#       - uses: appleboy/ssh-action@v1
+#         with:
+#           host: ${{ secrets.DEV_SERVER_HOST }}
+#           username: ${{ secrets.DEV_SERVER_USER }}
+#           key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+#           script: |
+#             cd /opt/app
+#             git fetch origin
+#             git checkout dev
+#             git pull origin dev
+#             docker compose -f docker-compose.yml \
+#                            -f docker-compose.dev.yml \
+#                            up -d --build
+#             docker system prune -f
+#             docker compose ps
