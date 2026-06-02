@@ -44,14 +44,12 @@ public class ServiceRequestService {
         RequestCategory category = RequestCategory.valueOf(dto.getCategory());
         Priority priority = Priority.valueOf(dto.getPriority());
 
-        // Auto-route to the department matching this category
         Department department = departmentRepository.findByCategory(category).orElse(null);
 
-        // Compute SLA deadline from the matching SLA policy
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime slaDeadline = slaPolicyRepository.findByPriority(priority)
-                .map(p -> now.plusHours(p.getResolutionTimeHours()))
-                .orElse(now.plusHours(24));
+        SlaPolicy policy = slaPolicyRepository.findByCategoryAndPriority(category, priority).orElse(null);
+        LocalDateTime resolutionDeadline = policy != null ? now.plusHours(policy.getResolutionTimeHours()) : now.plusHours(24);
+        LocalDateTime responseDeadline   = policy != null ? now.plusHours(policy.getResponseTimeHours())  : now.plusHours(4);
 
         ServiceRequest req = ServiceRequest.builder()
                 .title(dto.getTitle())
@@ -61,7 +59,8 @@ public class ServiceRequestService {
                 .status(RequestStatus.OPEN)
                 .requester(requester)
                 .department(department)
-                .slaDeadline(slaDeadline)
+                .slaDeadline(resolutionDeadline)
+                .responseDeadline(responseDeadline)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -92,8 +91,12 @@ public class ServiceRequestService {
         if (dto.getPriority() != null) {
             Priority priority = Priority.valueOf(dto.getPriority());
             req.setPriority(priority);
-            slaPolicyRepository.findByPriority(priority).ifPresent(p ->
-                    req.setSlaDeadline(req.getCreatedAt().plusHours(p.getResolutionTimeHours())));
+        }
+        if (dto.getCategory() != null || dto.getPriority() != null) {
+            slaPolicyRepository.findByCategoryAndPriority(req.getCategory(), req.getPriority()).ifPresent(p -> {
+                req.setSlaDeadline(req.getCreatedAt().plusHours(p.getResolutionTimeHours()));
+                req.setResponseDeadline(req.getCreatedAt().plusHours(p.getResponseTimeHours()));
+            });
         }
         req.setUpdatedAt(LocalDateTime.now());
         return toResponse(requestRepository.save(req));
@@ -108,11 +111,15 @@ public class ServiceRequestService {
         RequestStatus newStatus = RequestStatus.valueOf(update.getNewStatus());
         validateStatusTransition(req.getStatus(), newStatus);
 
+        LocalDateTime now = LocalDateTime.now();
         req.setStatus(newStatus);
         req.setAssignedTo(agent);
-        req.setUpdatedAt(LocalDateTime.now());
+        req.setUpdatedAt(now);
+        if (newStatus == RequestStatus.ASSIGNED && req.getFirstResponseAt() == null) {
+            req.setFirstResponseAt(now);
+        }
         if (newStatus == RequestStatus.RESOLVED) {
-            req.setResolvedAt(LocalDateTime.now());
+            req.setResolvedAt(now);
         }
         return toResponse(requestRepository.save(req));
     }
@@ -131,10 +138,11 @@ public class ServiceRequestService {
     }
 
     private ServiceRequestResponse toResponse(ServiceRequest req) {
-        boolean overdue = req.getSlaDeadline() != null
-                && LocalDateTime.now().isAfter(req.getSlaDeadline())
-                && req.getStatus() != RequestStatus.RESOLVED
-                && req.getStatus() != RequestStatus.CLOSED;
+        LocalDateTime now = LocalDateTime.now();
+        boolean active = req.getStatus() != RequestStatus.RESOLVED && req.getStatus() != RequestStatus.CLOSED;
+        boolean overdue         = active && req.getSlaDeadline() != null      && now.isAfter(req.getSlaDeadline());
+        boolean responseOverdue = active && req.getResponseDeadline() != null && req.getFirstResponseAt() == null
+                                  && now.isAfter(req.getResponseDeadline());
         return ServiceRequestResponse.builder()
                 .id(req.getId())
                 .title(req.getTitle())
@@ -146,10 +154,13 @@ public class ServiceRequestService {
                 .assignedToName(req.getAssignedTo() != null ? req.getAssignedTo().getFullName() : null)
                 .departmentName(req.getDepartment() != null ? req.getDepartment().getName() : null)
                 .slaDeadline(req.getSlaDeadline())
+                .responseDeadline(req.getResponseDeadline())
+                .firstResponseAt(req.getFirstResponseAt())
                 .createdAt(req.getCreatedAt())
                 .updatedAt(req.getUpdatedAt())
                 .resolvedAt(req.getResolvedAt())
                 .isOverdue(overdue)
+                .isResponseOverdue(responseOverdue)
                 .build();
     }
 }
