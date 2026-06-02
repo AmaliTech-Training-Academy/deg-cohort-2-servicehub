@@ -104,7 +104,7 @@ class ServiceRequestApiTest {
     void register_createsEmployeeAndReturnsToken() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"New Employee\",\"email\":\"new@amalitech.com\",\"password\":\"password123\"}"))
+                        .content("{\"name\":\"New Employee\",\"email\":\"new@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.role").value("EMPLOYEE"))
@@ -115,7 +115,7 @@ class ServiceRequestApiTest {
     void register_duplicateEmail_returns400() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Dup\",\"email\":\"manager@amalitech.com\",\"password\":\"password123\"}"))
+                        .content("{\"name\":\"Dup\",\"email\":\"manager@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Email already in use"));
     }
