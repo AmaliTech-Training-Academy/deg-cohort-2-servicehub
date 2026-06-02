@@ -17,4 +17,6 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     List<ServiceRequest> findByRequesterId(Long requesterId);
     Long countByStatus(RequestStatus status);
     List<ServiceRequest> findBySlaDeadlineBeforeAndStatusNotIn(LocalDateTime deadline, List<RequestStatus> statuses);
+    List<ServiceRequest> findByResponseDeadlineBeforeAndFirstResponseAtIsNullAndStatusNotIn(
+            LocalDateTime deadline, List<RequestStatus> statuses);
 }
