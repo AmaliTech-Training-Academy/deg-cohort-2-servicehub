@@ -3,6 +3,7 @@ package com.servicehub.service;
 import com.servicehub.dto.*;
 import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
+import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
@@ -35,6 +36,7 @@ class ServiceRequestServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private DepartmentRepository departmentRepository;
     @Mock private SlaPolicyRepository slaPolicyRepository;
+    @Mock private WorkflowService workflowService;
     @Mock private SlaService slaService;
 
     @InjectMocks private ServiceRequestService service;
@@ -97,6 +99,7 @@ class ServiceRequestServiceTest {
 
         lenient().when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
         lenient().when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
+        lenient().when(workflowService.updateStatus(anyLong(), anyString(), anyString())).thenReturn(openRequest);
     }
 
 
@@ -413,9 +416,9 @@ class ServiceRequestServiceTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("ASSIGNED");
 
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        ServiceRequest assigned = requestWithStatus(RequestStatus.ASSIGNED);
+        assigned.setAssignedTo(agent);
+        when(workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com")).thenReturn(assigned);
 
         ServiceRequestResponse result = service.updateStatus(1L, update, "agent@test.com");
 
@@ -425,13 +428,11 @@ class ServiceRequestServiceTest {
 
     @Test
     void updateStatus_assignedToInProgress_succeeds() {
-        ServiceRequest assigned = requestWithStatus(RequestStatus.ASSIGNED);
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("IN_PROGRESS");
 
-        when(requestRepository.findById(2L)).thenReturn(Optional.of(assigned));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(workflowService.updateStatus(2L, "IN_PROGRESS", "agent@test.com"))
+                .thenReturn(requestWithStatus(RequestStatus.IN_PROGRESS));
 
         ServiceRequestResponse result = service.updateStatus(2L, update, "agent@test.com");
 
@@ -440,28 +441,25 @@ class ServiceRequestServiceTest {
 
     @Test
     void updateStatus_inProgressToResolved_setsResolvedAt() {
-        ServiceRequest inProgress = requestWithStatus(RequestStatus.IN_PROGRESS);
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("RESOLVED");
 
-        when(requestRepository.findById(3L)).thenReturn(Optional.of(inProgress));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        ServiceRequest resolved = requestWithStatus(RequestStatus.RESOLVED);
+        resolved.setResolvedAt(LocalDateTime.now());
+        when(workflowService.updateStatus(3L, "RESOLVED", "agent@test.com")).thenReturn(resolved);
 
-        service.updateStatus(3L, update, "agent@test.com");
+        ServiceRequestResponse result = service.updateStatus(3L, update, "agent@test.com");
 
-        verify(requestRepository).save(argThat(r -> r.getResolvedAt() != null));
+        assertThat(result.getResolvedAt()).isNotNull();
     }
 
     @Test
     void updateStatus_resolvedToClosed_succeeds() {
-        ServiceRequest resolved = requestWithStatus(RequestStatus.RESOLVED);
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("CLOSED");
 
-        when(requestRepository.findById(4L)).thenReturn(Optional.of(resolved));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(workflowService.updateStatus(4L, "CLOSED", "agent@test.com"))
+                .thenReturn(requestWithStatus(RequestStatus.CLOSED));
 
         ServiceRequestResponse result = service.updateStatus(4L, update, "agent@test.com");
 
@@ -498,12 +496,12 @@ class ServiceRequestServiceTest {
     @ValueSource(strings = {"OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED"})
     void updateStatus_closedToAnyStatus_throwsInvalidTransition(String targetStatus) {
         ServiceRequest closed = requestWithStatus(RequestStatus.CLOSED);
-        when(requestRepository.findById(closed.getId())).thenReturn(Optional.of(closed));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(workflowService.updateStatus(closed.getId(), targetStatus, "agent@test.com"))
+                .thenThrow(new InvalidStatusTransitionException("Invalid status transition: CLOSED -> " + targetStatus));
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus(targetStatus);
         assertThatThrownBy(() -> service.updateStatus(closed.getId(), update, "agent@test.com"))
-                .isInstanceOf(BadRequestException.class)
+                .isInstanceOf(InvalidStatusTransitionException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 
@@ -562,12 +560,13 @@ class ServiceRequestServiceTest {
     }
 
     private void expectInvalidTransition(ServiceRequest request, String targetStatus) {
-        when(requestRepository.findById(request.getId())).thenReturn(Optional.of(request));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(workflowService.updateStatus(request.getId(), targetStatus, "agent@test.com"))
+                .thenThrow(new InvalidStatusTransitionException(
+                        "Invalid status transition: " + request.getStatus() + " -> " + targetStatus));
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus(targetStatus);
         assertThatThrownBy(() -> service.updateStatus(request.getId(), update, "agent@test.com"))
-                .isInstanceOf(BadRequestException.class)
+                .isInstanceOf(InvalidStatusTransitionException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 }
