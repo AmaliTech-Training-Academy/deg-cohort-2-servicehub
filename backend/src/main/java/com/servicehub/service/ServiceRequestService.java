@@ -1,6 +1,9 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
+import com.servicehub.exception.BadRequestException;
+import com.servicehub.exception.ForbiddenException;
+import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
@@ -27,19 +30,19 @@ public class ServiceRequestService {
 
     public Page<ServiceRequestResponse> getMyRequests(String email, int page, int size) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
         return requestRepository.findByRequesterIdOrderByCreatedAtDesc(user.getId(), PageRequest.of(page, size))
                 .map(this::toResponse);
     }
 
     public ServiceRequestResponse getRequestById(Long id) {
         return toResponse(requestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Request not found")));
+                .orElseThrow(() -> new NotFoundException("Request not found")));
     }
 
     public ServiceRequestResponse createRequest(ServiceRequestDto dto, String requesterEmail) {
         User requester = userRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         RequestCategory category = RequestCategory.valueOf(dto.getCategory());
         Priority priority = Priority.valueOf(dto.getPriority());
@@ -69,12 +72,12 @@ public class ServiceRequestService {
 
     public ServiceRequestResponse updateRequest(Long id, UpdateRequestDto dto, String email) {
         ServiceRequest req = requestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> new NotFoundException("Request not found"));
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (!req.getRequester().getId().equals(user.getId()) && user.getRole() != Role.MANAGER) {
-            throw new RuntimeException("Not authorized to update this request");
+            throw new ForbiddenException("Not authorized to update this request");
         }
         if (dto.getTitle() != null && !dto.getTitle().isBlank()) req.setTitle(dto.getTitle());
         if (dto.getDescription() != null) req.setDescription(dto.getDescription());
