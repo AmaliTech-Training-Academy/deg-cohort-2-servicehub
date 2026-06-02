@@ -101,6 +101,7 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/overdue")
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
     @Operation(summary = "List all overdue requests (past resolution SLA deadline)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "List of overdue requests"),
