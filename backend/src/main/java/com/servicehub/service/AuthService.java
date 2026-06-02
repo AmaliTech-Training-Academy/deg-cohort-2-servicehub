@@ -1,7 +1,7 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
-import com.servicehub.exception.BadRequestException;
+import com.servicehub.exception.EmailAlreadyExistsException;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.UserRepository;
@@ -31,7 +31,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new BadRequestException("Email already in use");
+            throw new EmailAlreadyExistsException("Email already in use");
         }
         User user = User.builder()
                 .fullName(request.getName())
