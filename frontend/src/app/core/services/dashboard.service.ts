@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface ServiceRequestResponse {
@@ -21,6 +21,9 @@ export interface ServiceRequestResponse {
   resolvedAt?: string;
   isOverdue: boolean;
   isResponseOverdue: boolean;
+  slaStatus?: string;
+  responseTimeMinutes?: number;
+  resolutionTimeMinutes?: number;
 }
 
 export interface PageResponse<T> {
@@ -39,6 +42,8 @@ export interface DashboardStatsResponse {
   slaComplianceRate: number;
   requestsByCategory: Record<string, number>;
   requestsByPriority: Record<string, number>;
+  requestsByStatus: Record<string, number>;
+  slaByCategory: Record<string, number>;
 }
 
 export interface ServiceRequestDto {
@@ -53,17 +58,18 @@ export class DashboardService {
   private http = inject(HttpClient);
   private readonly BASE = `${environment.apiUrl}/api`;
 
-  // TODO: integrate GET /api/dashboard/stats once backend PR is merged
   getStats(): Observable<DashboardStatsResponse> {
-    return of({
-      totalRequests: 0,
-      openRequests: 0,
-      resolvedRequests: 0,
-      avgResolutionHours: 0,
-      slaComplianceRate: 1,
-      requestsByCategory: { IT_SUPPORT: 0, FACILITIES: 0, HR_REQUEST: 0 },
-      requestsByPriority: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
-    });
+    return this.http.get<DashboardStatsResponse>(`${this.BASE}/dashboard/stats`);
+  }
+
+  getTrends(days = 7): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(
+      `${this.BASE}/dashboard/trends?days=${days}`
+    );
+  }
+
+  getSlaCompliance(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(`${this.BASE}/dashboard/sla`);
   }
 
   getRequests(page = 0, size = 20): Observable<PageResponse<ServiceRequestResponse>> {

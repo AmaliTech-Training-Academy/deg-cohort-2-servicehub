@@ -1,5 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { DashboardService, DashboardStatsResponse } from '../../../core/services/dashboard.service';
+
+interface TrendDay {
+  label: string;
+  count: number;
+}
 
 @Component({
   selector: 'app-manager-dashboard',
@@ -10,47 +16,99 @@ export class ManagerDashboard implements OnInit {
 
   loading = true;
   error = '';
+
   stats: DashboardStatsResponse = {
     totalRequests: 0, openRequests: 0, resolvedRequests: 0,
-    avgResolutionHours: 0, slaComplianceRate: 1,
-    requestsByCategory: { IT_SUPPORT: 0, FACILITIES: 0, HR_REQUEST: 0 },
-    requestsByPriority: {},
+    avgResolutionHours: 0, slaComplianceRate: 0,
+    requestsByCategory: {}, requestsByPriority: {},
+    requestsByStatus: {}, slaByCategory: {},
+  };
+
+  trendDays: TrendDay[] = [];
+
+  readonly STATUS_LABEL: Record<string, string> = {
+    OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress',
+    RESOLVED: 'Resolved', CLOSED: 'Closed',
+  };
+  readonly STATUS_COLOR: Record<string, string> = {
+    OPEN: '#9A968A', ASSIGNED: 'var(--blue)', IN_PROGRESS: 'var(--amber)',
+    RESOLVED: 'var(--teal)', CLOSED: '#B7B2A6',
+  };
+  readonly CAT_LABEL: Record<string, string> = {
+    IT_SUPPORT: 'IT Support', FACILITIES: 'Facilities', HR_REQUEST: 'HR Request',
+  };
+  readonly CAT_COLOR: Record<string, string> = {
+    IT_SUPPORT: 'var(--blue)', FACILITIES: 'var(--amber)', HR_REQUEST: 'var(--teal)',
   };
 
   ngOnInit(): void {
-    // TODO: integrate GET /api/dashboard/stats once backend PR is merged
-    this.dashboardService.getStats().subscribe({
-      next: s => { this.stats = s; this.loading = false; },
-      error: () => { this.error = 'Failed to load dashboard stats.'; this.loading = false; },
+    forkJoin({
+      stats: this.dashboardService.getStats(),
+      trends: this.dashboardService.getTrends(7),
+    }).subscribe({
+      next: ({ stats, trends }) => {
+        this.stats = stats;
+        this.trendDays = Object.entries(trends)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, count]) => ({ label: this.shortDate(date), count }));
+        this.loading = false;
+      },
+      error: () => { this.error = 'Failed to load dashboard data.'; this.loading = false; },
     });
   }
 
-  get compliancePct(): number { return Math.round(this.stats.slaComplianceRate * 100); }
+  private shortDate(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+  }
 
+  /* ── stat card helpers ── */
+  get compliancePct(): number { return Math.round((this.stats.slaComplianceRate ?? 0) * 100); }
   get complianceColor(): string {
     const p = this.compliancePct;
     return p >= 80 ? 'var(--teal)' : p >= 60 ? 'var(--amber)' : 'var(--red)';
   }
-
   get donutOffset(): number {
     const r = 54, circ = 2 * Math.PI * r;
     return circ * (1 - this.compliancePct / 100);
   }
-
   get donutCirc(): number { return 2 * Math.PI * 54; }
-
-  get maxCat(): number {
-    return Math.max(...Object.values(this.stats.requestsByCategory), 1);
-  }
-
-  catWidth(cat: string): string {
-    return ((this.stats.requestsByCategory[cat] ?? 0) / this.maxCat * 100) + '%';
-  }
-
-  catCount(cat: string): number { return this.stats.requestsByCategory[cat] ?? 0; }
-
   get avgDisplay(): string {
-    const h = this.stats.avgResolutionHours;
+    const h = this.stats.avgResolutionHours ?? 0;
     return h > 0 ? h.toFixed(1) + 'h' : '—';
+  }
+
+  /* ── category bar chart helpers ── */
+  get maxCat(): number {
+    return Math.max(...Object.values(this.stats.requestsByCategory ?? {}), 1);
+  }
+  catWidth(cat: string): string {
+    return ((this.stats.requestsByCategory?.[cat] ?? 0) / this.maxCat * 100) + '%';
+  }
+  catCount(cat: string): number { return this.stats.requestsByCategory?.[cat] ?? 0; }
+
+  /* ── status bar chart helpers ── */
+  get maxStatus(): number {
+    return Math.max(...Object.values(this.stats.requestsByStatus ?? {}), 1);
+  }
+  statusWidth(s: string): string {
+    return ((this.stats.requestsByStatus?.[s] ?? 0) / this.maxStatus * 100) + '%';
+  }
+  statusCount(s: string): number { return this.stats.requestsByStatus?.[s] ?? 0; }
+
+  /* ── trend bar chart helpers ── */
+  get maxTrend(): number { return Math.max(...this.trendDays.map(d => d.count), 1); }
+  trendWidth(count: number): string { return (count / this.maxTrend * 100) + '%'; }
+
+  /* ── priority helpers ── */
+  prioCount(p: string): number { return this.stats.requestsByPriority[p] ?? 0; }
+
+  /* ── SLA by category helpers ── */
+  slaCatPct(cat: string): number {
+    return Math.round((this.stats.slaByCategory?.[cat] ?? 0) * 100);
+  }
+  slaCatColor(cat: string): string {
+    const p = this.slaCatPct(cat);
+    return p >= 80 ? 'var(--teal)' : p >= 60 ? 'var(--amber)' : 'var(--red)';
   }
 }
