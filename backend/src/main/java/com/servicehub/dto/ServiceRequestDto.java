@@ -1,7 +1,11 @@
 package com.servicehub.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
+import com.servicehub.model.enums.Priority;
+import com.servicehub.model.enums.RequestCategory;
+import com.servicehub.validation.ValidEnum;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 @Data
 public class ServiceRequestDto {
@@ -13,12 +17,10 @@ public class ServiceRequestDto {
     private String description;
 
     @NotNull(message = "Category is required")
-    @Pattern(regexp = "IT_SUPPORT|FACILITIES|HR_REQUEST",
-             message = "Category must be IT_SUPPORT, FACILITIES, or HR_REQUEST")
+     @ValidEnum(enumClass = RequestCategory.class, message = "Category must be IT_SUPPORT, FACILITIES, or HR_REQUEST")
     private String category;
 
     @NotNull(message = "Priority is required")
-    @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL",
-             message = "Priority must be LOW, MEDIUM, HIGH, or CRITICAL")
+    @ValidEnum(enumClass = Priority.class, message = "Priority must be LOW, MEDIUM, HIGH, or CRITICAL")
     private String priority;
 }

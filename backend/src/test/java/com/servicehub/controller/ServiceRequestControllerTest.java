@@ -249,6 +249,7 @@ class ServiceRequestControllerTest {
     void createRequest_facilitiesCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Fix AC");
+        dto.setDescription("AC unit not working in room 201");
         dto.setCategory("FACILITIES");
         dto.setPriority("LOW");
 
@@ -273,6 +274,7 @@ class ServiceRequestControllerTest {
     void createRequest_hrCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Leave request");
+        dto.setDescription("Requesting annual leave approval for next week");
         dto.setCategory("HR_REQUEST");
         dto.setPriority("MEDIUM");
 
@@ -298,6 +300,7 @@ class ServiceRequestControllerTest {
     void updateRequest_byOwner_returns200() throws Exception {
         UpdateRequestDto dto = new UpdateRequestDto();
         dto.setTitle("Updated title");
+        dto.setDescription("Updated description");
 
         when(requestService.updateRequest(eq(1L), any(), eq("employee@test.com")))
                 .thenReturn(sampleResponse());
@@ -313,6 +316,7 @@ class ServiceRequestControllerTest {
     void updateRequest_unauthorizedUser_returns403WithError() throws Exception {
         UpdateRequestDto dto = new UpdateRequestDto();
         dto.setTitle("Sneaky update");
+        dto.setDescription("Unauthorized update attempt");
 
         when(requestService.updateRequest(any(), any(), any()))
                 .thenThrow(new ForbiddenException("Not authorized to update this request"));
@@ -330,10 +334,14 @@ class ServiceRequestControllerTest {
         when(requestService.updateRequest(eq(99L), any(), any()))
                 .thenThrow(new NotFoundException("Request not found"));
 
+        UpdateRequestDto dto = new UpdateRequestDto();
+        dto.setTitle("Some title");
+        dto.setDescription("Some description");
+
         mockMvc.perform(put("/api/requests/99")
                         .header("Authorization", "Bearer " + employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Request not found"));
     }
