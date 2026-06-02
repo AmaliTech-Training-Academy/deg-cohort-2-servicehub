@@ -4,33 +4,39 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   imports: [ReactiveFormsModule, RouterLink],
-  templateUrl: './login.html',
+  templateUrl: './register.html',
 })
-export class LoginComponent {
+export class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
 
   form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
+    name:       ['', [Validators.required, Validators.minLength(2)]],
+    email:      ['', [Validators.required, Validators.email]],
+    password:   ['', [Validators.required, Validators.minLength(6)]],
+    department: [''],
   });
 
   error = '';
   loading = false;
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.loading = true;
     this.error = '';
 
-    this.authService.login(this.form.getRawValue()).subscribe({
+    const { name, email, password, department } = this.form.getRawValue();
+    this.authService.register({ name, email, password, department: department || undefined }).subscribe({
       next: () => { this.loading = false; this.router.navigateByUrl(this.authService.getDashboardRoute()); },
-      error: () => {
-        this.error = 'Invalid email or password.';
+      error: (err) => {
+        this.error = err?.error?.error ?? 'Registration failed. Please try again.';
         this.loading = false;
       },
     });

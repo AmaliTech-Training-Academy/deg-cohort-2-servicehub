@@ -1,11 +1,78 @@
-<div class="min-h-screen bg-gray-50 p-8">
-  <div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-semibold text-gray-800">Manager Dashboard</h1>
-      <button (click)="logout()" class="text-sm text-gray-500 hover:text-gray-700 underline">
-        Sign out
-      </button>
+@if (loading) {
+  <p class="note" style="padding:40px 0">Loading dashboard…</p>
+} @else if (error) {
+  <p class="form-err">{{ error }}</p>
+} @else {
+  <!-- Stat grid -->
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="stat-k">Active tickets</div>
+      <div class="stat-v">{{ stats.openRequests }}</div>
+      <div class="stat-d">in the queue now</div>
     </div>
-    <p class="text-gray-600">Welcome, Manager. Dashboard content coming soon.</p>
+    <div class="card stat">
+      <div class="stat-k">SLA compliance</div>
+      <div class="stat-v">{{ compliancePct }}%</div>
+      <div class="stat-d" [class.up]="compliancePct >= 80" [class.down]="compliancePct < 80">
+        {{ compliancePct >= 80 ? 'healthy' : 'needs attention' }}
+      </div>
+    </div>
+    <div class="card stat">
+      <div class="stat-k">Resolved tickets</div>
+      <div class="stat-v">{{ stats.resolvedRequests }}</div>
+      <div class="stat-d">all time</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-k">Avg resolution</div>
+      <div class="stat-v">{{ avgDisplay }}</div>
+      <div class="stat-d">across resolved</div>
+    </div>
   </div>
-</div>
+
+  <!-- Charts row -->
+  <div class="dash-row">
+    <!-- Volume by category bar chart -->
+    <div class="card panel">
+      <div class="section-h">Volume by category</div>
+      <div class="bar-row">
+        <div class="lab">IT Support</div>
+        <div class="bar-track">
+          <div class="bar-fill" [style.width]="catWidth('IT_SUPPORT')" style="background:var(--blue)"></div>
+        </div>
+        <div class="num">{{ catCount('IT_SUPPORT') }}</div>
+      </div>
+      <div class="bar-row">
+        <div class="lab">Facilities</div>
+        <div class="bar-track">
+          <div class="bar-fill" [style.width]="catWidth('FACILITIES')" style="background:var(--amber)"></div>
+        </div>
+        <div class="num">{{ catCount('FACILITIES') }}</div>
+      </div>
+      <div class="bar-row">
+        <div class="lab">HR Request</div>
+        <div class="bar-track">
+          <div class="bar-fill" [style.width]="catWidth('HR_REQUEST')" style="background:var(--teal)"></div>
+        </div>
+        <div class="num">{{ catCount('HR_REQUEST') }}</div>
+      </div>
+    </div>
+
+    <!-- SLA compliance donut -->
+    <div class="card panel donut-panel">
+      <div class="section-h">SLA compliance</div>
+      <svg width="160" height="160" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="54" fill="none" stroke="var(--line)" stroke-width="13" />
+        <circle cx="65" cy="65" r="54" fill="none"
+          [attr.stroke]="complianceColor" stroke-width="13" stroke-linecap="round"
+          [attr.stroke-dasharray]="donutCirc"
+          [attr.stroke-dashoffset]="donutOffset"
+          transform="rotate(-90 65 65)"
+          style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)" />
+        <text x="65" y="61" text-anchor="middle"
+          style="font-family:'Bricolage Grotesque';font-size:26px;font-weight:700;fill:var(--txt)">{{ compliancePct }}%</text>
+        <text x="65" y="80" text-anchor="middle"
+          style="font-size:9px;fill:var(--txt-faint)">on target</text>
+      </svg>
+    </div>
+  </div>
+}

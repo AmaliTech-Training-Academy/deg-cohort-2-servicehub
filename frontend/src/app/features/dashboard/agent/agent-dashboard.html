@@ -1,11 +1,113 @@
-<div class="min-h-screen bg-gray-50 p-8">
-  <div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-semibold text-gray-800">Agent Dashboard</h1>
-      <button (click)="logout()" class="text-sm text-gray-500 hover:text-gray-700 underline">
-        Sign out
-      </button>
+@if (loading) {
+  <p class="note" style="padding:40px 0">Loading tickets…</p>
+} @else if (error) {
+  <p class="form-err">{{ error }}</p>
+} @else {
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-search">
+      <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/></svg>
+      <input [(ngModel)]="q" placeholder="Search by title, ID or requester…" />
+      @if (q) {
+        <button class="clear" (click)="q = ''" aria-label="Clear search">
+          <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      }
     </div>
-    <p class="text-gray-600">Welcome, Agent. Dashboard content coming soon.</p>
+    <select class="filter-select" [(ngModel)]="statusFilter" aria-label="Filter by status">
+      <option value="ALL">All statuses</option>
+      <option value="OPEN">Open</option>
+      <option value="ASSIGNED">Assigned</option>
+      <option value="IN_PROGRESS">In progress</option>
+      <option value="RESOLVED">Resolved</option>
+      <option value="CLOSED">Closed</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="prioFilter" aria-label="Filter by priority">
+      <option value="ALL">All priorities</option>
+      <option value="LOW">Low</option>
+      <option value="MEDIUM">Medium</option>
+      <option value="HIGH">High</option>
+      <option value="CRITICAL">Critical</option>
+    </select>
   </div>
-</div>
+
+  <!-- Meta line -->
+  <div class="filter-meta">
+    <span>Showing <b>{{ filtered.length }}</b> of {{ requests.length }} {{ requests.length === 1 ? 'ticket' : 'tickets' }}</span>
+    @if (isDirty) {
+      <button class="clear-f" (click)="clearFilters()">Clear filters</button>
+    }
+  </div>
+
+  <!-- Ticket table -->
+  @if (filtered.length === 0 && requests.length > 0) {
+    <div class="card">
+      <div class="empty">
+        <svg class="ic" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/></svg>
+        <p class="empty-t">No tickets match your filters</p>
+        <p class="empty-s">Try a different search or clear the filters.</p>
+      </div>
+    </div>
+  } @else if (requests.length === 0) {
+    <div class="card">
+      <div class="empty">
+        <svg class="ic" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2 3h6l2-3h4M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5L5 5Z"/></svg>
+        <p class="empty-t">No tickets in your queue</p>
+        <p class="empty-s">New tickets will appear here when routed to your department.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="card data-list" role="table">
+      <div class="dl-head" role="row">
+        <div>ID</div>
+        <div>Request</div>
+        <div>Priority</div>
+        <div>Status</div>
+        <div>Resolution SLA</div>
+      </div>
+      @for (r of filtered; track r.id) {
+        <div class="dl-row static" role="row">
+          <!-- ID -->
+          <div class="dl-id mono" data-h="ID">{{ ticketId(r.id) }}</div>
+
+          <!-- Request -->
+          <div class="dl-title" data-h="Request">
+            <span class="t">
+              {{ r.title }}
+              @if (r.isOverdue) {
+                <svg class="ic warn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+              }
+            </span>
+            <span class="m">
+              <span class="cat-tag">
+                <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="CAT_ICON[r.category]" /></svg>
+                {{ CAT_LABEL[r.category] }}
+              </span>
+              · {{ r.requesterName }} · opened {{ ago(r.createdAt) }}
+            </span>
+          </div>
+
+          <!-- Priority -->
+          <div data-h="Priority">
+            <span class="chip p-{{ r.priority }}">{{ r.priority }}</span>
+          </div>
+
+          <!-- Status -->
+          <div data-h="Status">
+            <span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span>
+          </div>
+
+          <!-- SLA + action -->
+          <div data-h="Resolution SLA" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <app-sla-badge [slaDeadline]="r.slaDeadline" [isOverdue]="r.isOverdue" />
+            @if (nextStatus(r)) {
+              <button class="btn btn-ghost btn-sm" [disabled]="advancing.has(r.id)" (click)="advance(r)">
+                {{ advancing.has(r.id) ? '…' : '→ ' + nextLabel(r) }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
