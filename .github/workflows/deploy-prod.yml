@@ -1,0 +1,27 @@
+name: Deploy to PRODUCTION
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to PRODUCTION
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd /opt/app
+            git fetch origin
+            git checkout main
+            git pull origin main
+            docker compose -f docker-compose.yml up -d --build
+            docker system prune -f
+            sleep 10
+            curl -f http://localhost:8080/actuator/health || exit 1
+            docker compose ps
