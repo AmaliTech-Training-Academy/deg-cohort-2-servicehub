@@ -14,6 +14,9 @@ CREATE INDEX IF NOT EXISTS idx_sr_created_at   ON service_requests (created_at);
 -- Migrate sla_policies to per-category + priority model
 ALTER TABLE sla_policies ADD COLUMN IF NOT EXISTS category VARCHAR(50);
 
+-- Drop the priority-only unique constraint before inserting rows with duplicate priorities
+ALTER TABLE sla_policies DROP CONSTRAINT IF EXISTS sla_policies_priority_key;
+
 -- Expand from 4 priority-only rows to 12 category+priority rows
 DELETE FROM sla_policies;
 
@@ -34,8 +37,7 @@ INSERT INTO sla_policies (id, category, priority, response_time_hours, resolutio
   (11, 'FACILITIES', 'MEDIUM',   8,  48),
   (12, 'FACILITIES', 'LOW',      24, 72);
 
--- Replace priority-only unique constraint with composite (category, priority)
-ALTER TABLE sla_policies DROP CONSTRAINT IF EXISTS sla_policies_priority_key;
+-- Add composite (category, priority) unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
