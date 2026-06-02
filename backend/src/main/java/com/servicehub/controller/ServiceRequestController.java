@@ -2,6 +2,7 @@ package com.servicehub.controller;
 
 import com.servicehub.dto.*;
 import com.servicehub.service.ServiceRequestService;
+import com.servicehub.service.SlaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,8 +13,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/requests")
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Service Requests", description = "Create and manage service requests")
 public class ServiceRequestController {
     private final ServiceRequestService requestService;
+    private final SlaService slaService;
 
     @GetMapping
     @Operation(summary = "List all requests (paginated)")
@@ -90,11 +95,25 @@ public class ServiceRequestController {
     })
     public ResponseEntity<ServiceRequestResponse> update(
             @PathVariable Long id,
-            @RequestBody UpdateRequestDto dto,
+            @Valid @RequestBody UpdateRequestDto dto,
             @AuthenticationPrincipal String email) {
         return ResponseEntity.ok(requestService.updateRequest(id, dto, email));
     }
 
+    @GetMapping("/overdue")
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
+    @Operation(summary = "List all overdue requests (past resolution SLA deadline)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of overdue requests"),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid token",
+                content = @Content(schema = @Schema(example = "{\"error\": \"Unauthorized: missing or invalid token\"}")))
+    })
+    public ResponseEntity<List<ServiceRequestResponse>> getOverdue() {
+        return ResponseEntity.ok(
+                slaService.getOverdueRequests().stream().map(requestService::toResponse).toList());
+    }
+
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
     @PutMapping("/{id}/status")
     @Operation(summary = "Advance request status (AGENT or MANAGER only)",
             description = "Valid transitions: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED")
