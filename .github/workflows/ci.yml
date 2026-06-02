@@ -8,12 +8,12 @@ on:
   pull_request:
     branches: [dev, main]
 
-# Cancels in-progress runs on the same branch when a new push comes in.
-# Uses head_ref (branch name) for PRs and ref_name for direct pushes so
-# both events on the same branch share one concurrency slot — preventing
-# double runs when a push updates an open PR.
+# Each event type gets its own concurrency slot so push and PR runs complete
+# independently — developers see checks on every push AND on every PR update.
+# Multiple pushes to the same branch still cancel each other, as do multiple
+# PR syncs, avoiding wasted runs within each event type.
 concurrency:
-  group: ci-${{ github.head_ref || github.ref_name }}
+  group: ci-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -187,7 +187,7 @@ jobs:
                 echo ""
               fi
             done
-            [ "$found" = false ] && echo "No CRITICAL/HIGH findings in the scanned area(s)."
+            [ "$found" = false ] && echo "No CRITICAL/HIGH findings in the scanned area(s)." || true
           } >> "$GITHUB_STEP_SUMMARY"
 
   docker:
