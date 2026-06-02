@@ -1,6 +1,7 @@
 package com.servicehub.service;
 
 import com.servicehub.exception.InvalidStatusTransitionException;
+import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
@@ -20,9 +21,9 @@ public class WorkflowService {
 
     public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail) {
         ServiceRequest req = requestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> new NotFoundException("Request not found"));
         User agent = userRepository.findByEmail(agentEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         RequestStatus next = RequestStatus.valueOf(newStatus);
         validateTransition(req.getStatus(), next);
