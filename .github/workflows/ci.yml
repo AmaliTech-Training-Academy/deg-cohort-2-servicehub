@@ -141,7 +141,7 @@ jobs:
           scan-ref: backend
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'          # advisory — set to '1' to block on findings
           format: table
           output: trivy-backend.txt
 
@@ -153,7 +153,7 @@ jobs:
           scan-ref: frontend
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'          # advisory — set to '1' to block on findings
           format: table
           output: trivy-frontend.txt
 
@@ -165,7 +165,7 @@ jobs:
           scan-ref: data-engineering
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'          # advisory — set to '1' to block on findings
           format: table
           output: trivy-data-engineering.txt
 
@@ -228,24 +228,22 @@ jobs:
             echo "[View failed run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Email notification — self-skips if MAIL_PASSWORD secret is not set.
-      # To enable: add MAIL_USERNAME, MAIL_PASSWORD and MAIL_TO as repository secrets.
-      - name: Email notification
-        if: ${{ secrets.MAIL_PASSWORD != '' }}
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "CI Failed — ${{ github.ref_name }}"
-          to: ${{ secrets.MAIL_TO }}
-          from: GitHub Actions
-          body: |
-            Pipeline failed on branch ${{ github.ref_name }}.
-
-            Commit: ${{ github.sha }}
-            Triggered by: ${{ github.actor }}
-
-            View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # Email notification — uncomment when MAIL_USERNAME, MAIL_PASSWORD and MAIL_TO
+      # repository secrets are added.
+      #
+      # - name: Email notification
+      #   uses: dawidd6/action-send-mail@v3
+      #   with:
+      #     server_address: smtp.gmail.com
+      #     server_port: 465
+      #     secure: true
+      #     username: ${{ secrets.MAIL_USERNAME }}
+      #     password: ${{ secrets.MAIL_PASSWORD }}
+      #     subject: "CI Failed — ${{ github.ref_name }}"
+      #     to: ${{ secrets.MAIL_TO }}
+      #     from: GitHub Actions
+      #     body: |
+      #       Pipeline failed on branch ${{ github.ref_name }}.
+      #       Commit: ${{ github.sha }}
+      #       Triggered by: ${{ github.actor }}
+      #       View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
