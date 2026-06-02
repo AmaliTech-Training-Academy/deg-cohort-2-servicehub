@@ -8,6 +8,5 @@ import java.util.Optional;
 
 public interface DepartmentRepository extends JpaRepository<Department, Long> {
     Optional<Department> findByCategory(RequestCategory category);
-    Optional<Department> findByNameIgnoreCase(String name);
     List<Department> findByIsActiveTrue();
 }
