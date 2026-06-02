@@ -251,6 +251,7 @@ class ServiceRequestControllerTest {
     void createRequest_facilitiesCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Fix AC");
+        dto.setDescription("AC unit not working in room 201");
         dto.setCategory("FACILITIES");
         dto.setPriority("LOW");
 
@@ -275,6 +276,7 @@ class ServiceRequestControllerTest {
     void createRequest_hrCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Leave request");
+        dto.setDescription("Requesting annual leave approval for next week");
         dto.setCategory("HR_REQUEST");
         dto.setPriority("MEDIUM");
 

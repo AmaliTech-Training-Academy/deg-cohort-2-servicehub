@@ -3,6 +3,7 @@ package com.servicehub.service;
 import com.servicehub.dto.ServiceRequestDto;
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.dto.StatusUpdateRequest;
+import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
@@ -26,6 +27,7 @@ class WorkflowSlaServiceTest {
     @Mock UserRepository userRepository;
     @Mock DepartmentRepository departmentRepository;
     @Mock SlaPolicyRepository slaPolicyRepository;
+    @Mock WorkflowService workflowService;
     @Mock SlaService slaService;
 
     @InjectMocks ServiceRequestService service;
@@ -50,10 +52,10 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("OPEN -> ASSIGNED sets firstResponseAt and assignedTo")
     void openToAssigned_setsFirstResponseAndAgent() {
-        ServiceRequest req = buildRequest(RequestStatus.OPEN);
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ServiceRequest result = buildRequest(RequestStatus.ASSIGNED);
+        result.setAssignedTo(agent);
+        result.setFirstResponseAt(LocalDateTime.now());
+        when(workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com")).thenReturn(result);
 
         StatusUpdateRequest dto = new StatusUpdateRequest();
         dto.setNewStatus("ASSIGNED");
@@ -66,25 +68,22 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("ASSIGNED -> IN_PROGRESS does NOT overwrite assignedTo")
     void assignedToInProgress_doesNotOverwriteAgent() {
-        ServiceRequest req = buildRequest(RequestStatus.ASSIGNED);
-        req.setAssignedTo(agent);
-        req.setFirstResponseAt(LocalDateTime.now().minusHours(1));
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("mgr@test.com")).thenReturn(Optional.of(manager));
-        when(requestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ServiceRequest result = buildRequest(RequestStatus.IN_PROGRESS);
+        result.setAssignedTo(agent);
+        result.setFirstResponseAt(LocalDateTime.now().minusHours(1));
+        when(workflowService.updateStatus(1L, "IN_PROGRESS", "mgr@test.com")).thenReturn(result);
 
         service.updateStatus(1L, new StatusUpdateRequest() {{ setNewStatus("IN_PROGRESS"); }}, "mgr@test.com");
 
-        assertThat(req.getAssignedTo().getFullName()).isEqualTo("Agent One");
+        assertThat(result.getAssignedTo().getFullName()).isEqualTo("Agent One");
     }
 
     @Test @DisplayName("IN_PROGRESS -> RESOLVED sets resolvedAt and COMPLETED status")
     void inProgressToResolved_setsResolvedAt() {
-        ServiceRequest req = buildRequest(RequestStatus.IN_PROGRESS);
-        req.setAssignedTo(agent);
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ServiceRequest result = buildRequest(RequestStatus.RESOLVED);
+        result.setAssignedTo(agent);
+        result.setResolvedAt(LocalDateTime.now());
+        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com")).thenReturn(result);
 
         ServiceRequestResponse resp = service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("RESOLVED"); }}, "agent@test.com");
@@ -96,11 +95,9 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("RESOLVED -> CLOSED is valid")
     void resolvedToClosed_isValid() {
-        ServiceRequest req = buildRequest(RequestStatus.RESOLVED);
-        req.setResolvedAt(LocalDateTime.now().minusMinutes(5));
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
-        when(requestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ServiceRequest result = buildRequest(RequestStatus.CLOSED);
+        result.setResolvedAt(LocalDateTime.now().minusMinutes(5));
+        when(workflowService.updateStatus(1L, "CLOSED", "agent@test.com")).thenReturn(result);
 
         assertThat(service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("CLOSED"); }}, "agent@test.com")
@@ -109,9 +106,8 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("Invalid transition OPEN -> IN_PROGRESS throws")
     void invalidTransition_throws() {
-        ServiceRequest req = buildRequest(RequestStatus.OPEN);
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(workflowService.updateStatus(1L, "IN_PROGRESS", "agent@test.com"))
+                .thenThrow(new InvalidStatusTransitionException("Invalid status transition: OPEN -> IN_PROGRESS"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("IN_PROGRESS"); }}, "agent@test.com"))
@@ -121,9 +117,8 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("CLOSED is terminal — any further transition throws")
     void closedIsTerminal_throws() {
-        ServiceRequest req = buildRequest(RequestStatus.CLOSED);
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
-        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com"))
+                .thenThrow(new InvalidStatusTransitionException("Invalid status transition: CLOSED -> RESOLVED"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("RESOLVED"); }}, "agent@test.com"))
