@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -34,12 +35,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public API routes
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/departments").permitAll()
-                // Swagger
+                .requestMatchers(HttpMethod.GET, "/api/departments").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
-                // HTML view pages — use AntPathRequestMatcher to avoid MVC type-coercion
+                // Originally Thymeleaf view routes — coordinate with frontend before removing
                 .requestMatchers(
                     new AntPathRequestMatcher("/"),
                     new AntPathRequestMatcher("/login"),
@@ -47,6 +46,9 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/requests"),
                     new AntPathRequestMatcher("/requests/**")
                 ).permitAll()
+                .requestMatchers("/api/requests/**").authenticated()
+                // Role model is MANAGER/AGENT/EMPLOYEE — spec used ADMIN/USER
+                .requestMatchers("/api/dashboard/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
