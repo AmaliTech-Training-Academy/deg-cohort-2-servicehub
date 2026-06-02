@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class SlaController {
     private final ServiceRequestService requestService;
 
     @GetMapping("/breaches")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "List all SLA-breached requests (response + resolution)")
     public ResponseEntity<List<ServiceRequestResponse>> getAllBreaches() {
         return ResponseEntity.ok(
@@ -32,6 +34,7 @@ public class SlaController {
     }
 
     @GetMapping("/breaches/response")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "List requests that missed their response SLA")
     public ResponseEntity<List<ServiceRequestResponse>> getResponseBreaches() {
         return ResponseEntity.ok(
@@ -39,6 +42,7 @@ public class SlaController {
     }
 
     @GetMapping("/breaches/resolution")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "List requests that missed their resolution SLA")
     public ResponseEntity<List<ServiceRequestResponse>> getResolutionBreaches() {
         return ResponseEntity.ok(
@@ -46,12 +50,14 @@ public class SlaController {
     }
 
     @GetMapping("/policies")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "List all SLA policies")
     public ResponseEntity<List<SlaPolicy>> getPolicies() {
         return ResponseEntity.ok(slaService.getAllPolicies());
     }
 
     @PutMapping("/policies/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Update an SLA policy (MANAGER only)")
     public ResponseEntity<SlaPolicy> updatePolicy(
             @PathVariable Long id,
