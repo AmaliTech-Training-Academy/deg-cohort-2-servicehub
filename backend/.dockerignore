@@ -1,0 +1,15 @@
+target/
+*.class
+*.jar
+*.war
+
+.git/
+.gitignore
+*.md
+
+.idea/
+.vscode/
+*.iml
+
+.env
+.env.*

@@ -1,22 +1,23 @@
-target/
-*.class
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Java / Spring Boot
+backend/target/
 *.jar
 *.war
-*.log
-*.iml
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# IDE
 .idea/
 .vscode/
-*.swp
-.project
-.classpath
-.settings/
+*.iml
+
+# OS
 .DS_Store
 Thumbs.db
-.env
-*.env
-__pycache__/
-*.pyc
-.venv/
-venv/
-node_modules/
-docker-compose.override.yml
