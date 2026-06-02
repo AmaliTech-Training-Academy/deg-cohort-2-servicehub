@@ -38,7 +38,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/departments").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
-                // Originally Thymeleaf view routes — coordinate with frontend before removing
+                // These routes were for the original Thymeleaf UI and are intentionally open.
+                // The frontend is now Angular (served separately). Coordinate with frontend
+                // before removing — if no backend-rendered pages are in use, these can be dropped.
                 .requestMatchers(
                     new AntPathRequestMatcher("/"),
                     new AntPathRequestMatcher("/login"),
@@ -47,7 +49,10 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/requests/**")
                 ).permitAll()
                 .requestMatchers("/api/requests/**").authenticated()
-                // Role model is MANAGER/AGENT/EMPLOYEE — spec used ADMIN/USER
+                // Role decision: implementation uses MANAGER / AGENT / EMPLOYEE.
+                // The original spec named these ADMIN / USER — updated to match the 3-role model
+                // agreed on during backend planning. @PreAuthorize annotations on individual
+                // endpoints enforce fine-grained access within these roles.
                 .requestMatchers("/api/dashboard/**").authenticated()
                 .anyRequest().authenticated()
             )
