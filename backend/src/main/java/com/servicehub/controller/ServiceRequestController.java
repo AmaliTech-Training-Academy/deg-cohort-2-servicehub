@@ -28,6 +28,7 @@ public class ServiceRequestController {
     private final SlaService slaService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
     @Operation(summary = "List all requests (paginated)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Page of service requests"),
