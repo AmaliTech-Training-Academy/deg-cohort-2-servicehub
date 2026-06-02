@@ -35,6 +35,7 @@ class ServiceRequestServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private DepartmentRepository departmentRepository;
     @Mock private SlaPolicyRepository slaPolicyRepository;
+    @Mock private SlaService slaService;
 
     @InjectMocks private ServiceRequestService service;
 
@@ -93,6 +94,9 @@ class ServiceRequestServiceTest {
                 .slaDeadline(LocalDateTime.now().plusHours(4))
                 .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .build();
+
+        lenient().when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
+        lenient().when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
     }
 
 
@@ -106,7 +110,6 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.HIGH)).thenReturn(Optional.of(highPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> {
             ServiceRequest r = inv.getArgument(0); r.setId(42L); return r;
         });
@@ -131,7 +134,6 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -149,7 +151,6 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.FACILITIES)).thenReturn(Optional.of(facilitiesDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.FACILITIES, Priority.LOW)).thenReturn(Optional.of(lowPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -167,7 +168,6 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.HR_REQUEST)).thenReturn(Optional.of(hrDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.HR_REQUEST, Priority.MEDIUM)).thenReturn(Optional.of(mediumPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -185,7 +185,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
+        when(slaService.computeDeadline(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(LocalDateTime.now().plusHours(2));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -203,7 +203,7 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.LOW)).thenReturn(Optional.of(lowPolicy));
+        when(slaService.computeDeadline(RequestCategory.IT_SUPPORT, Priority.LOW)).thenReturn(LocalDateTime.now().plusHours(48));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
@@ -220,7 +220,6 @@ class ServiceRequestServiceTest {
 
         when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(any())).thenReturn(Optional.empty());
-        when(slaPolicyRepository.findByCategoryAndPriority(any(), any())).thenReturn(Optional.empty());
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
