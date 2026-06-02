@@ -95,8 +95,8 @@ class ServiceRequestServiceTest {
                 .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .build();
 
-        when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
-        when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
+        lenient().when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
+        lenient().when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
     }
 
 
