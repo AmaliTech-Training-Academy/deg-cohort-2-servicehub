@@ -1,4 +1,9 @@
-@if (loading()) {
+@if (selectedRequest()) {
+  <app-ticket-detail
+    [request]="selectedRequest()!"
+    (back)="closeDetail()"
+    (advanced)="onDetailAdvanced($event)" />
+} @else if (loading()) {
   <p class="note" style="padding:40px 0">Loading tickets…</p>
 } @else if (error()) {
   <p class="form-err">{{ error() }}</p>
@@ -66,8 +71,11 @@
         <div>ID</div><div>Request</div><div>Priority</div><div>Status</div><div>Resolution SLA</div>
       </div>
       @for (r of filtered(); track r.id) {
-        <div class="dl-row static" role="row">
+        <button class="dl-row" role="row" (click)="openDetail(r.id)">
+          <!-- ID -->
           <div class="dl-id mono" data-h="ID">{{ ticketId(r.id) }}</div>
+
+          <!-- Request -->
           <div class="dl-title" data-h="Request">
             <span class="t">
               {{ r.title }}
@@ -83,17 +91,28 @@
               · {{ r.requesterName }} · opened {{ ago(r.createdAt) }}
             </span>
           </div>
-          <div data-h="Priority"><span class="chip p-{{ r.priority }}">{{ r.priority }}</span></div>
-          <div data-h="Status"><span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span></div>
+
+          <!-- Priority -->
+          <div data-h="Priority">
+            <app-priority-chip [priority]="r.priority" />
+          </div>
+
+          <!-- Status -->
+          <div data-h="Status">
+            <app-status-dot [status]="r.status" />
+          </div>
+
+          <!-- SLA + action -->
           <div data-h="Resolution SLA" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <app-sla-badge [slaDeadline]="r.slaDeadline" [isOverdue]="r.isOverdue" />
+            <app-sla-tag [slaDeadline]="r.slaDeadline" [isOverdue]="r.isOverdue" />
             @if (nextStatus(r)) {
-              <button class="btn btn-ghost btn-sm" [disabled]="isAdvancing(r.id)" (click)="advance(r)">
+              <button class="btn btn-ghost btn-sm" [disabled]="isAdvancing(r.id)"
+                (click)="$event.stopPropagation(); advance(r)">
                 {{ isAdvancing(r.id) ? '…' : '→ ' + nextLabel(r) }}
               </button>
             }
           </div>
-        </div>
+        </button>
       }
     </div>
   }

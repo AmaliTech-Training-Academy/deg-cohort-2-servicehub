@@ -72,6 +72,10 @@ export class DashboardService {
     return this.http.get<Record<string, number>>(`${this.BASE}/dashboard/sla`);
   }
 
+  getRequestById(id: number): Observable<ServiceRequestResponse> {
+    return this.http.get<ServiceRequestResponse>(`${this.BASE}/requests/${id}`);
+  }
+
   getRequests(page = 0, size = 20): Observable<PageResponse<ServiceRequestResponse>> {
     return this.http.get<PageResponse<ServiceRequestResponse>>(
       `${this.BASE}/requests?page=${page}&size=${size}`
