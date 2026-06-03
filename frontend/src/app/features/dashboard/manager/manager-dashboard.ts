@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { DashboardService, DashboardStatsResponse } from '../../../core/services/dashboard.service';
 
 interface TrendDay { label: string; count: number; }
@@ -31,20 +32,20 @@ export class ManagerDashboard implements OnInit {
     OPEN: '#9A968A', ASSIGNED: 'var(--blue)', IN_PROGRESS: 'var(--amber)',
     RESOLVED: 'var(--teal)', CLOSED: '#B7B2A6',
   };
-  readonly CAT_LABEL: Record<string, string> = {
+  readonly CAT_LABEL: Partial<Record<string, string>> = {
     IT_SUPPORT: 'IT Support', FACILITIES: 'Facilities', HR_REQUEST: 'HR Request',
   };
-  readonly CAT_COLOR: Record<string, string> = {
+  readonly CAT_COLOR: Partial<Record<string, string>> = {
     IT_SUPPORT: 'var(--blue)', FACILITIES: 'var(--amber)', HR_REQUEST: 'var(--teal)',
   };
-  readonly PRIO_COLOR: Record<string, string> = {
+  readonly PRIO_COLOR: Partial<Record<string, string>> = {
     CRITICAL: 'var(--red)', HIGH: 'var(--amber)', MEDIUM: 'var(--blue)', LOW: '#9BA890',
   };
 
   ngOnInit(): void {
     forkJoin({
-      stats: this.dashboardService.getStats(),
-      trends: this.dashboardService.getTrends(7),
+      stats:  this.dashboardService.getStats().pipe(catchError(() => of(EMPTY_STATS))),
+      trends: this.dashboardService.getTrends(7).pipe(catchError(() => of({} as Record<string, number>))),
     }).subscribe({
       next: ({ stats, trends }) => {
         this.stats.set(stats);
@@ -75,6 +76,25 @@ export class ManagerDashboard implements OnInit {
     const h = this.stats().avgResolutionHours ?? 0;
     return h > 0 ? h.toFixed(1) + 'h' : '—';
   });
+  private readonly KNOWN_CATS = ['IT_SUPPORT', 'FACILITIES', 'HR_REQUEST'];
+  private readonly KNOWN_PRIOS = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+
+  readonly categoryKeys = computed(() => {
+    const apiKeys = new Set(Object.keys(this.stats().requestsByCategory ?? {}));
+    return [
+      ...this.KNOWN_CATS.filter(k => apiKeys.has(k)),
+      ...Array.from(apiKeys).filter(k => !this.KNOWN_CATS.includes(k)),
+    ];
+  });
+
+  readonly priorityKeys = computed(() => {
+    const apiKeys = new Set(Object.keys(this.stats().requestsByPriority ?? {}));
+    return [
+      ...this.KNOWN_PRIOS.filter(k => apiKeys.has(k)),
+      ...Array.from(apiKeys).filter(k => !this.KNOWN_PRIOS.includes(k)),
+    ];
+  });
+
   readonly maxCat = computed(() =>
     Math.max(...Object.values(this.stats().requestsByCategory ?? {}), 1)
   );
@@ -109,9 +129,9 @@ export class ManagerDashboard implements OnInit {
   readonly trendAreaPath = computed(() => {
     const pts = this.trendPts();
     if (!pts.length) return '';
-    const H = this.TREND_H, pad = this.TREND_PAD;
-    const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' ');
-    return `${line} L${pts[pts.length - 1].x} ${H - pad} L${pts[0].x} ${H - pad} Z`;
+    const { TREND_H: H, TREND_PAD: pad } = this;
+    const last = pts[pts.length - 1];
+    return `${this.trendLinePath()} L${last.x} ${H - pad} L${pts[0].x} ${H - pad} Z`;
   });
 
   /* ── helpers called from template ── */

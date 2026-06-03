@@ -34,11 +34,11 @@
   <div class="dash-row">
     <div class="card panel">
       <div class="section-h">Volume by category</div>
-      @for (cat of ['IT_SUPPORT','FACILITIES','HR_REQUEST']; track cat) {
+      @for (cat of categoryKeys(); track cat) {
         <div class="bar-row">
-          <div class="lab">{{ CAT_LABEL[cat] }}</div>
+          <div class="lab">{{ CAT_LABEL[cat] ?? cat }}</div>
           <div class="bar-track">
-            <div class="bar-fill" [style.width]="catWidth(cat)" [style.background]="CAT_COLOR[cat]"></div>
+            <div class="bar-fill" [style.width]="catWidth(cat)" [style.background]="CAT_COLOR[cat] ?? 'var(--txt-faint)'"></div>
           </div>
           <div class="num">{{ catCount(cat) }}</div>
         </div>
@@ -66,11 +66,11 @@
   <div class="dash-row">
     <div class="card panel">
       <div class="section-h">Volume by priority</div>
-      @for (p of ['CRITICAL','HIGH','MEDIUM','LOW']; track p) {
+      @for (p of priorityKeys(); track p) {
         <div class="bar-row">
           <div class="lab"><span class="chip p-{{ p }}">{{ p }}</span></div>
           <div class="bar-track">
-            <div class="bar-fill" [style.width]="prioWidth(p)" [style.background]="PRIO_COLOR[p]"></div>
+            <div class="bar-fill" [style.width]="prioWidth(p)" [style.background]="PRIO_COLOR[p] ?? 'var(--txt-faint)'"></div>
           </div>
           <div class="num">{{ prioCount(p) }}</div>
         </div>
@@ -101,12 +101,12 @@
         <div style="position:relative">
           <svg viewBox="0 0 460 130" class="trend-svg" preserveAspectRatio="none" aria-hidden="true">
             <defs>
-              <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="mgr-trend-grad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22" />
                 <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
               </linearGradient>
             </defs>
-            <path [attr.d]="trendAreaPath()" fill="url(#trendGrad)" />
+            <path [attr.d]="trendAreaPath()" fill="url(#mgr-trend-grad)" />
             <path [attr.d]="trendLinePath()" fill="none" stroke="var(--accent)"
               stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
             @for (pt of trendPts(); track pt.label) {
@@ -115,13 +115,19 @@
               <!-- invisible larger hit area for easier hover -->
               <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="10"
                 fill="transparent"
+                aria-describedby="trend-tooltip"
                 (mouseenter)="hoveredPt.set(pt)"
-                (mouseleave)="hoveredPt.set(null)" />
+                (mouseleave)="hoveredPt.set(null)"
+                (touchstart)="$event.preventDefault(); hoveredPt.set(pt)"
+                (touchend)="hoveredPt.set(null)" />
             }
           </svg>
 
           @if (hoveredPt()) {
             <div class="trend-tooltip"
+              id="trend-tooltip"
+              role="tooltip"
+              [attr.aria-label]="hoveredPt()!.label + ': ' + hoveredPt()!.count + ' requests'"
               [style.left.%]="hoveredPt()!.x / 460 * 100"
               [style.top.%]="hoveredPt()!.y / 130 * 100">
               <div style="font-size:15px">{{ hoveredPt()!.count }}</div>
@@ -140,9 +146,9 @@
 
     <div class="card panel">
       <div class="section-h">SLA compliance by category</div>
-      @for (cat of ['IT_SUPPORT','FACILITIES','HR_REQUEST']; track cat) {
+      @for (cat of categoryKeys(); track cat) {
         <div class="bar-row">
-          <div class="lab">{{ CAT_LABEL[cat] }}</div>
+          <div class="lab">{{ CAT_LABEL[cat] ?? cat }}</div>
           <div class="bar-track">
             <div class="bar-fill" [style.width]="slaCatPct(cat) + '%'" [style.background]="slaCatColor(cat)"></div>
           </div>
