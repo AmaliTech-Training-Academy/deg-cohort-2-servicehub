@@ -39,4 +39,15 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
 
     @Query(value = "SELECT CAST(created_at AS date) AS day, COUNT(*) FROM service_requests WHERE created_at >= :since GROUP BY day ORDER BY day", nativeQuery = true)
     List<Object[]> countGroupedByDate(@Param("since") LocalDateTime since);
+
+    @Query(value = """
+            SELECT u.full_name, COUNT(r.id), COUNT(r.resolved_at),
+                   AVG(EXTRACT(EPOCH FROM (r.resolved_at - r.created_at)) / 3600.0)
+            FROM service_requests r
+            JOIN users u ON r.assigned_to_id = u.id
+            WHERE u.role = 'AGENT'
+            GROUP BY u.id, u.full_name
+            ORDER BY u.full_name
+            """, nativeQuery = true)
+    List<Object[]> agentPerformanceStats();
 }
