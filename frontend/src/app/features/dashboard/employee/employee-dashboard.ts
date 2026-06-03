@@ -43,6 +43,11 @@ export class EmployeeDashboard implements OnInit {
       next: p => { this.requests.set(p.content); this.loading.set(false); },
       error: () => { this.error.set('Failed to load your requests.'); this.loading.set(false); },
     });
+
+    // TODO: connect to GET /api/notifications/stream?token=<jwt> via EventSource once the
+    // backend SSE endpoint is implemented. On receiving a TICKET_UPDATED event whose
+    // requestId matches one of this user's requests, re-call getMyRequests() to refresh
+    // the list automatically without requiring a page reload.
   }
 
   openDetail(id: number): void {
