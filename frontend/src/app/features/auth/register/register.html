@@ -58,12 +58,21 @@
 
       <div class="field">
         <label for="reg_dept">Department</label>
-        <select id="reg_dept" class="field-select" formControlName="department">
-          <option value="">None</option>
-          <option value="IT_SUPPORT">IT Support</option>
-          <option value="FACILITIES">Facilities</option>
-          <option value="HR_REQUEST">HR Request</option>
+        <select id="reg_dept" class="field-select" formControlName="department"
+          [class.invalid]="form.get('department')!.invalid && form.get('department')!.touched">
+          <option value="" disabled>{{ deptLoading() ? 'Loading departments…' : 'Select a department' }}</option>
+          @for (dept of departments(); track dept.id) {
+            @if (dept.name) {
+              <option [value]="dept.name">{{ dept.name }}</option>
+            }
+          }
         </select>
+        @if (form.get('department')!.invalid && form.get('department')!.touched) {
+          <p class="err">
+            <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+            Please select a department.
+          </p>
+        }
       </div>
 
       <button type="submit" class="enter" [disabled]="loading">
