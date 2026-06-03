@@ -5,6 +5,13 @@ import { environment } from '../../../environments/environment';
 
 export type UserRole = 'MANAGER' | 'AGENT' | 'EMPLOYEE';
 
+export interface Department {
+  id: number;
+  name: string;
+  category: string;
+  isActive: boolean;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -27,23 +34,40 @@ export interface AuthResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
+  private readonly NAME_KEY = 'auth_name';
   private readonly API = `${environment.apiUrl}/api/auth`;
+  private readonly BASE = `${environment.apiUrl}/api`;
   private http = inject(HttpClient);
+
+  getDepartments(): Observable<Department[]> {
+    return this.http.get<Department[]>(`${this.BASE}/departments`);
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.API}/login`, credentials)
-      .pipe(tap(res => localStorage.setItem(this.TOKEN_KEY, res.token)));
+      .pipe(tap(res => {
+        localStorage.setItem(this.TOKEN_KEY, res.token);
+        localStorage.setItem(this.NAME_KEY, res.fullName);
+      }));
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.API}/register`, data)
-      .pipe(tap(res => localStorage.setItem(this.TOKEN_KEY, res.token)));
+      .pipe(tap(res => {
+        localStorage.setItem(this.TOKEN_KEY, res.token);
+        localStorage.setItem(this.NAME_KEY, res.fullName);
+      }));
   }
 
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.NAME_KEY);
+  }
+
+  getFullName(): string {
+    return localStorage.getItem(this.NAME_KEY) ?? 'User';
   }
 
   getToken(): string | null {

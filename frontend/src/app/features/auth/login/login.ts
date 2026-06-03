@@ -1,11 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
 })
 export class LoginComponent {
@@ -18,20 +18,20 @@ export class LoginComponent {
     password: ['', Validators.required],
   });
 
-  error = '';
-  loading = false;
+  readonly error = signal('');
+  readonly loading = signal(false);
 
   submit(): void {
     if (this.form.invalid) return;
 
-    this.loading = true;
-    this.error = '';
+    this.loading.set(true);
+    this.error.set('');
 
     this.authService.login(this.form.getRawValue()).subscribe({
-      next: () => { this.loading = false; this.router.navigateByUrl(this.authService.getDashboardRoute()); },
+      next: () => { this.loading.set(false); this.router.navigateByUrl(this.authService.getDashboardRoute()); },
       error: () => {
-        this.error = 'Invalid email or password.';
-        this.loading = false;
+        this.error.set('Invalid email or password.');
+        this.loading.set(false);
       },
     });
   }
