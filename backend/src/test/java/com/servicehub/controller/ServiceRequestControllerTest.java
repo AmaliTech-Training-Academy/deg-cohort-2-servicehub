@@ -1,6 +1,7 @@
 package com.servicehub.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servicehub.config.CorsConfig;
 import com.servicehub.config.SecurityConfig;
 import com.servicehub.dto.*;
 import com.servicehub.exception.BadRequestException;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ServiceRequestController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class ServiceRequestControllerTest {
 
