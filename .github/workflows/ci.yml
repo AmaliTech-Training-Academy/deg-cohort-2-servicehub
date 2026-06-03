@@ -96,19 +96,13 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      # Lint is commented out until ESLint is configured in the frontend.
-      # To enable:
-      #   1. Run: ng add @angular-eslint/schematics
-      #   2. Add "lint": "ng lint" to frontend/package.json scripts
-      #   3. Uncomment the step below
-      #
-      # - name: Run lint
-      #   working-directory: ./frontend
-      #   run: npm run lint
+      - name: Run lint
+        working-directory: ./frontend
+        run: npm run lint
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm test -- --watch=false --code-coverage
+        run: npm test -- --no-watch
 
       - name: Upload coverage report
         if: always()

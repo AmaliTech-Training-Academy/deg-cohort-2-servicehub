@@ -1,0 +1,68 @@
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="side" [class.open]="navOpen()">
+    <div class="brand">
+      <div class="logo" style="width:34px;height:34px;font-size:17px">S</div>
+      <div class="bt"><b>ServiceHub</b></div>
+    </div>
+
+    <div class="nav-group">{{ navGroup }}</div>
+    <nav class="nav">
+      @for (item of navItems; track item.route) {
+        <button [class.active]="isActive(item.route)" (click)="navigate(item.route)">
+          <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path [attr.d]="iconPath(item.icon)" />
+          </svg>
+          {{ item.label }}
+        </button>
+      }
+    </nav>
+
+    <div class="side-foot">
+      <div class="who">
+        <div class="avatar" style="width:36px;height:36px;font-size:14px">{{ initials }}</div>
+        <div class="who-id">
+          <div class="nm">{{ fullName }}</div>
+          <div class="rl">{{ roleLabel }}</div>
+        </div>
+        <button class="who-logout" title="Sign out" (click)="logout()">
+          <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile scrim -->
+  <div class="scrim" [class.show]="navOpen()"
+    role="button" tabindex="0" aria-label="Close navigation"
+    (click)="navOpen.set(false)"
+    (keydown.enter)="navOpen.set(false)"
+    (keydown.space)="navOpen.set(false)">
+  </div>
+
+  <!-- Main area -->
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" (click)="navOpen.set(true)" aria-label="Open menu">
+        <svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="tt">
+        <h2>{{ pageTitle() }}</h2>
+        <div class="crumb">{{ pageSubtitle() }}</div>
+      </div>
+      <div class="spacer"></div>
+      @if (showNewRequestCta) {
+        <button class="btn btn-primary topbar-cta" (click)="navigate('/requests/submit')">
+          <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New request
+        </button>
+      }
+    </div>
+
+    <div class="content">
+      <div class="view-enter">
+        <router-outlet />
+      </div>
+    </div>
+  </div>
+</div>
