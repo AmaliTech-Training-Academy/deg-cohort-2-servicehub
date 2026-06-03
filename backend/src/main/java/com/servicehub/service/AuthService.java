@@ -2,8 +2,8 @@ package com.servicehub.service;
 
 import com.servicehub.config.JwtService;
 import com.servicehub.dto.*;
-import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.EmailAlreadyExistsException;
+import com.servicehub.exception.UnauthorizedException;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.UserRepository;
@@ -42,9 +42,9 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadRequestException("Invalid credentials");
+            throw new UnauthorizedException("Invalid credentials");
         }
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
         return AuthResponse.builder()
