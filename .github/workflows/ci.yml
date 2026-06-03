@@ -1,16 +1,27 @@
 name: CI Pipeline
 
 on:
+  push:
   pull_request:
     branches: [dev, main]
+
+# Each event type gets its own concurrency slot so push and PR runs complete
+# independently — developers see checks on every push AND on every PR update.
+# Multiple pushes to the same branch still cancel each other, as do multiple
+# PR syncs, avoiding wasted runs within each event type.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      data_engineering: ${{ steps.filter.outputs.data_engineering }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,11 +33,14 @@ jobs:
               - 'backend/**'
             frontend:
               - 'frontend/**'
+            data_engineering:
+              - 'data-engineering/**'
 
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest
     needs: changes
+    timeout-minutes: 15
     if: needs.changes.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
@@ -53,46 +67,125 @@ jobs:
           name: backend-test-report
           path: backend/target/surefire-reports/
 
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: backend/target/site/jacoco/
+
   frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest
     needs: changes
+    timeout-minutes: 15
     if: needs.changes.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
-      # Lint is commented out until ESLint is configured in the frontend.
-      # To enable:
-      #   1. Run: ng add @angular-eslint/schematics
-      #   2. Add "lint": "ng lint" to frontend/package.json scripts
-      #   3. Uncomment the step below
-      #
-      # - name: Run lint
-      #   working-directory: ./frontend
-      #   run: npm run lint
+      - name: Run lint
+        working-directory: ./frontend
+        run: npm run lint
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm test -- --watch=false
+        run: npm test -- --no-watch
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: frontend/coverage/
 
       - name: Build
         working-directory: ./frontend
         run: npm run build
 
+  trivy:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: changes
+    timeout-minutes: 12
+    if: |
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.data_engineering == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan backend
+        if: needs.changes.outputs.backend == 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: backend
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'          # advisory — set to '1' to block on findings
+          format: table
+          output: trivy-backend.txt
+
+      - name: Scan frontend
+        if: needs.changes.outputs.frontend == 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: frontend
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'          # advisory — set to '1' to block on findings
+          format: table
+          output: trivy-frontend.txt
+
+      - name: Scan data-engineering
+        if: needs.changes.outputs.data_engineering == 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: data-engineering
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'          # advisory — set to '1' to block on findings
+          format: table
+          output: trivy-data-engineering.txt
+
+      - name: Report to summary
+        if: always()
+        run: |
+          {
+            echo "## Trivy Security Scan (CRITICAL/HIGH only)"
+            echo ""
+            found=false
+            for area in backend frontend data-engineering; do
+              f="trivy-${area}.txt"
+              if [ -s "$f" ]; then
+                found=true
+                echo "### $area"
+                echo '```'
+                cat "$f"
+                echo '```'
+                echo ""
+              fi
+            done
+            [ "$found" = false ] && echo "No CRITICAL/HIGH findings in the scanned area(s)." || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
   docker:
     name: Docker Build Check
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    timeout-minutes: 15
     if: |
       always() &&
       (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
@@ -105,3 +198,43 @@ jobs:
 
       - name: Build images
         run: docker compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, trivy, docker]
+    timeout-minutes: 5
+    if: failure()
+    steps:
+      - name: Post failure to summary
+        run: |
+          {
+            echo "## Pipeline Failed"
+            echo ""
+            echo "One or more jobs failed on branch \`${{ github.ref_name }}\`."
+            echo ""
+            echo "**Commit:** \`${{ github.sha }}\`"
+            echo "**Triggered by:** ${{ github.actor }}"
+            echo ""
+            echo "[View failed run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Sends failure alert to the DevOps inbox via Resend (resend.com).
+      # Requires RESEND_API_KEY and MAIL_TO secrets in GitHub → Settings → Secrets → Actions.
+      # Self-skips gracefully if secrets are not configured yet.
+      - name: Email notification
+        if: github.ref_name == 'dev' || github.ref_name == 'main'
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"CI Alerts <onboarding@resend.dev>\",
+              \"to\": [\"$MAIL_TO\"],
+              \"subject\": \"CI Failed — ${{ github.ref_name }}\",
+              \"text\": \"Pipeline failed on branch ${{ github.ref_name }}.\nCommit: ${{ github.sha }}\nTriggered by: ${{ github.actor }}\nView run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            }"
