@@ -88,10 +88,10 @@ export class DashboardService {
     );
   }
 
-  updateStatus(id: number, newStatus: string): Observable<ServiceRequestResponse> {
-    return this.http.put<ServiceRequestResponse>(
-      `${this.BASE}/requests/${id}/status`, { newStatus }
-    );
+  updateStatus(id: number, newStatus: string, comment?: string): Observable<ServiceRequestResponse> {
+    const body: Record<string, string> = { newStatus };
+    if (comment?.trim()) body['comment'] = comment.trim();
+    return this.http.put<ServiceRequestResponse>(`${this.BASE}/requests/${id}/status`, body);
   }
 
   createRequest(dto: ServiceRequestDto): Observable<ServiceRequestResponse> {

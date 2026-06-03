@@ -1,4 +1,5 @@
 import { Component, EventEmitter, inject, Input, OnChanges, Output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { DashboardService, ServiceRequestResponse } from '../../../../core/services/dashboard.service';
 import { PriorityChipComponent } from '../../../../shared/components/priority-chip/priority-chip';
 import { StatusDotComponent } from '../../../../shared/components/status-dot/status-dot';
@@ -6,7 +7,7 @@ import { SlaTagComponent } from '../../../../shared/components/sla-tag/sla-tag';
 
 @Component({
   selector: 'app-ticket-detail',
-  imports: [PriorityChipComponent, StatusDotComponent, SlaTagComponent],
+  imports: [FormsModule, PriorityChipComponent, StatusDotComponent, SlaTagComponent],
   templateUrl: './ticket-detail.html',
 })
 export class TicketDetailComponent implements OnChanges {
@@ -17,6 +18,7 @@ export class TicketDetailComponent implements OnChanges {
   @Output() advanced = new EventEmitter<ServiceRequestResponse>();
 
   readonly advancing = signal(false);
+  readonly comment = signal('');
 
   readonly STEPS = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
@@ -64,8 +66,12 @@ export class TicketDetailComponent implements OnChanges {
   advance(): void {
     if (!this.nextStatus || this.advancing()) return;
     this.advancing.set(true);
-    this.dashboardService.updateStatus(this.request.id, this.nextStatus).subscribe({
-      next: updated => { this.advancing.set(false); this.advanced.emit(updated); },
+    this.dashboardService.updateStatus(this.request.id, this.nextStatus, this.comment()).subscribe({
+      next: updated => {
+        this.advancing.set(false);
+        this.comment.set('');
+        this.advanced.emit(updated);
+      },
       error: () => this.advancing.set(false),
     });
   }

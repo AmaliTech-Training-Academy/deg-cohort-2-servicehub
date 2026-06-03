@@ -47,6 +47,17 @@
     @if (nextStatus) {
       <div class="card detail-act">
         <div class="section-h">Move this ticket forward</div>
+
+        <textarea
+          placeholder="Add a note for this status change (optional)…"
+          [ngModel]="comment()" (ngModelChange)="comment.set($event)"
+          style="width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+                 font-size:13.5px;background:var(--paper);resize:vertical;min-height:80px;
+                 line-height:1.5;margin-bottom:14px;display:block"
+          (focus)="$any($event.target).style.borderColor='var(--accent)'"
+          (blur)="$any($event.target).style.borderColor='var(--line)'"
+        ></textarea>
+
         <div class="act-row">
           <button class="btn btn-primary" [disabled]="advancing()" (click)="advance()">
             {{ advancing() ? 'Updating…' : advanceLabel }}

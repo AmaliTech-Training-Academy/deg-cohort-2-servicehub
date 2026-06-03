@@ -71,7 +71,10 @@
         <div>ID</div><div>Request</div><div>Priority</div><div>Status</div><div>Resolution SLA</div>
       </div>
       @for (r of filtered(); track r.id) {
-        <button class="dl-row" role="row" (click)="openDetail(r.id)">
+        <div class="dl-row" role="row" tabindex="0"
+          (click)="openDetail(r.id)"
+          (keydown.enter)="openDetail(r.id)"
+          (keydown.space)="$event.preventDefault(); openDetail(r.id)">
           <!-- ID -->
           <div class="dl-id mono" data-h="ID">{{ ticketId(r.id) }}</div>
 
@@ -112,7 +115,7 @@
               </button>
             }
           </div>
-        </button>
+        </div>
       }
     </div>
   }
