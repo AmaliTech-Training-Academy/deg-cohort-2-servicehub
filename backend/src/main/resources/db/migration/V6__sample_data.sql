@@ -1,7 +1,7 @@
 -- V6: Sample service request data for ETL testing, SLA breach testing, and dashboard development
 -- 55 requests spread across all categories, priorities, and statuses
--- Includes: 7 overdue (past sla_deadline, not resolved), 22 resolved within SLA,
---           10 resolved with SLA breach, 16 active (future sla_deadline)
+-- Includes: 7 overdue (past sla_deadline, not resolved), 12 resolved within SLA,
+--           10 resolved with SLA breach, 26 active (future sla_deadline)
 --
 -- SLA policy reference (from V3 sla_policies table):
 --   IT_SUPPORT: CRITICAL(res=2h,resp=1h) HIGH(8h,2h) MEDIUM(24h,4h) LOW(48h,8h)
@@ -371,7 +371,7 @@ INSERT INTO service_requests (
 (31, 'Wi-Fi drops in meeting room B', 'Connectivity unstable. Meetings disrupted.',
     'IT_SUPPORT', 'CRITICAL', 'ASSIGNED',
     1, 2, 1,
-    NOW() + INTERVAL '1 hour' - INTERVAL '30 minutes',
+    NOW() + INTERVAL '2 hours',
     NOW() - INTERVAL '15 minutes',
     NOW() - INTERVAL '15 minutes',
     NOW() - INTERVAL '1 hour' - INTERVAL '30 minutes',
@@ -402,7 +402,7 @@ INSERT INTO service_requests (
     'IT_SUPPORT', 'MEDIUM', 'OPEN',
     1, NULL, 1,
     NOW() + INTERVAL '12 hours',
-    NOW() + INTERVAL '16 hours',
+    NOW() - INTERVAL '8 hours',
     NULL,
     NOW() - INTERVAL '12 hours',
     NOW() - INTERVAL '12 hours',
@@ -412,7 +412,7 @@ INSERT INTO service_requests (
     'IT_SUPPORT', 'MEDIUM', 'IN_PROGRESS',
     1, 2, 3,
     NOW() + INTERVAL '6 hours',
-    NOW() + INTERVAL '22 hours',
+    NOW() - INTERVAL '14 hours',
     NOW() - INTERVAL '16 hours',
     NOW() - INTERVAL '18 hours',
     NOW() - INTERVAL '16 hours',
@@ -422,7 +422,7 @@ INSERT INTO service_requests (
     'IT_SUPPORT', 'LOW', 'OPEN',
     1, NULL, 2,
     NOW() + INTERVAL '36 hours',
-    NOW() + INTERVAL '20 hours',
+    NOW() - INTERVAL '4 hours',
     NULL,
     NOW() - INTERVAL '12 hours',
     NOW() - INTERVAL '12 hours',
@@ -564,7 +564,7 @@ INSERT INTO service_requests (
     'FACILITIES', 'MEDIUM', 'OPEN',
     3, NULL, 2,
     NOW() + INTERVAL '36 hours',
-    NOW() + INTERVAL '44 hours',
+    NOW() - INTERVAL '4 hours',
     NULL,
     NOW() - INTERVAL '12 hours',
     NOW() - INTERVAL '12 hours',
@@ -601,8 +601,8 @@ INSERT INTO service_requests (
     NULL),
 
 (54, 'Flickering fluorescent light in corridor', 'Lights on level 1 corridor strobing. Headache risk.',
-    'IT_SUPPORT', 'HIGH', 'IN_PROGRESS',
-    1, 2, 1,
+    'FACILITIES', 'HIGH', 'IN_PROGRESS',
+    3, 2, 1,
     NOW() + INTERVAL '4 hours',
     NOW() + INTERVAL '2 hours',
     NOW() - INTERVAL '1 hour',
@@ -614,7 +614,7 @@ INSERT INTO service_requests (
     'HR_REQUEST', 'MEDIUM', 'OPEN',
     2, NULL, 3,
     NOW() + INTERVAL '42 hours',
-    NOW() + INTERVAL '18 hours',
+    NOW() - INTERVAL '2 hours',
     NULL,
     NOW() - INTERVAL '6 hours',
     NOW() - INTERVAL '6 hours',
