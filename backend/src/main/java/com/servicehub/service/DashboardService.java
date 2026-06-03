@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,19 @@ public class DashboardService {
         Map<String, Long> result = new LinkedHashMap<>();
         for (Object[] row : requestRepository.countGroupedByDate(since)) {
             result.put(row[0].toString(), ((Number) row[1]).longValue());
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> getAgentStats() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : requestRepository.agentPerformanceStats()) {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("agentName",          row[0].toString());
+            entry.put("totalAssigned",      ((Number) row[1]).longValue());
+            entry.put("totalResolved",      ((Number) row[2]).longValue());
+            entry.put("avgResolutionHours", row[3] != null ? ((Number) row[3]).doubleValue() : 0.0);
+            result.add(entry);
         }
         return result;
     }
