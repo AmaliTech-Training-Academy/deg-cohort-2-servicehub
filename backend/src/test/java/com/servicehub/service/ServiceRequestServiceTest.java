@@ -296,8 +296,9 @@ class ServiceRequestServiceTest {
     @Test
     void getRequestById_existingId_returnsResponse() {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
 
-        ServiceRequestResponse result = service.getRequestById(1L);
+        ServiceRequestResponse result = service.getRequestById(1L, "employee@test.com");
 
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("Fix printer");
@@ -309,7 +310,7 @@ class ServiceRequestServiceTest {
     void getRequestById_nonExistentId_throwsRuntimeException() {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getRequestById(99L))
+        assertThatThrownBy(() -> service.getRequestById(99L, "employee@test.com"))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
@@ -511,8 +512,9 @@ class ServiceRequestServiceTest {
         openRequest.setSlaDeadline(LocalDateTime.now().minusMinutes(1));
         openRequest.setStatus(RequestStatus.OPEN);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
 
-        assertThat(service.getRequestById(1L).getIsOverdue()).isTrue();
+        assertThat(service.getRequestById(1L, "agent@test.com").getIsOverdue()).isTrue();
     }
 
     @Test
@@ -520,8 +522,9 @@ class ServiceRequestServiceTest {
         openRequest.setSlaDeadline(LocalDateTime.now().plusHours(2));
         openRequest.setStatus(RequestStatus.OPEN);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
 
-        assertThat(service.getRequestById(1L).getIsOverdue()).isFalse();
+        assertThat(service.getRequestById(1L, "agent@test.com").getIsOverdue()).isFalse();
     }
 
     @Test
@@ -529,8 +532,9 @@ class ServiceRequestServiceTest {
         openRequest.setSlaDeadline(LocalDateTime.now().minusHours(1));
         openRequest.setStatus(RequestStatus.RESOLVED);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
 
-        assertThat(service.getRequestById(1L).getIsOverdue()).isFalse();
+        assertThat(service.getRequestById(1L, "agent@test.com").getIsOverdue()).isFalse();
     }
 
     @Test
@@ -538,8 +542,9 @@ class ServiceRequestServiceTest {
         openRequest.setSlaDeadline(LocalDateTime.now().minusHours(1));
         openRequest.setStatus(RequestStatus.CLOSED);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
 
-        assertThat(service.getRequestById(1L).getIsOverdue()).isFalse();
+        assertThat(service.getRequestById(1L, "agent@test.com").getIsOverdue()).isFalse();
     }
 
 

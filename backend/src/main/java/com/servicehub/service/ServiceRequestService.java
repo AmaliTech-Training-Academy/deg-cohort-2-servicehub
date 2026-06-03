@@ -34,9 +34,15 @@ public class ServiceRequestService {
                 .map(this::toResponse);
     }
 
-    public ServiceRequestResponse getRequestById(Long id) {
-        return toResponse(requestRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Request not found")));
+    public ServiceRequestResponse getRequestById(Long id, String email) {
+        ServiceRequest req = requestRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Request not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (user.getRole() == Role.EMPLOYEE && !req.getRequester().getId().equals(user.getId())) {
+            throw new ForbiddenException("Access denied: you can only view your own requests");
+        }
+        return toResponse(req);
     }
 
     public ServiceRequestResponse createRequest(ServiceRequestDto dto, String requesterEmail) {
@@ -142,6 +148,7 @@ public class ServiceRequestService {
                 .slaStatus(slaStatus)
                 .responseTimeMinutes(responseTimeMinutes)
                 .resolutionTimeMinutes(resolutionTimeMinutes)
+                .slaBreached(req.isSlaBreached())
                 .build();
     }
 }

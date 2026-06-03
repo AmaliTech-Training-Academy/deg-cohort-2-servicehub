@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -34,11 +35,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public API routes
                 .requestMatchers("/api/auth/**").permitAll()
-                // Swagger
+                .requestMatchers(HttpMethod.GET, "/api/departments").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
-                // HTML view pages — use AntPathRequestMatcher to avoid MVC type-coercion
+                // These routes were for the original Thymeleaf UI and are intentionally open.
+                // The frontend is now Angular (served separately). Coordinate with frontend
+                // before removing — if no backend-rendered pages are in use, these can be dropped.
                 .requestMatchers(
                     new AntPathRequestMatcher("/"),
                     new AntPathRequestMatcher("/login"),
@@ -46,6 +48,10 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/requests"),
                     new AntPathRequestMatcher("/requests/**")
                 ).permitAll()
+                // Role decision: implementation uses MANAGER / AGENT / EMPLOYEE.
+                // The original spec named these ADMIN / USER — updated to match the 3-role model
+                // agreed on during backend planning. @PreAuthorize annotations on individual
+                // endpoints enforce fine-grained access within these roles.
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
