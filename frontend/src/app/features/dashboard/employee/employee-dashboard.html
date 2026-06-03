@@ -1,11 +1,13 @@
-@if (loading) {
+@if (loading()) {
   <p class="note" style="padding:40px 0">Loading your requests…</p>
-} @else if (error) {
-  <p class="form-err">{{ error }}</p>
+} @else if (error()) {
+  <p class="form-err">{{ error() }}</p>
 } @else {
   <!-- Filter bar -->
   <div class="filter-bar">
-    <select class="filter-select" [(ngModel)]="statusFilter" aria-label="Filter by status">
+    <select class="filter-select"
+      [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
+      aria-label="Filter by status">
       <option value="ALL">All statuses</option>
       <option value="OPEN">Open</option>
       <option value="ASSIGNED">Assigned</option>
@@ -13,7 +15,9 @@
       <option value="RESOLVED">Resolved</option>
       <option value="CLOSED">Closed</option>
     </select>
-    <select class="filter-select" [(ngModel)]="prioFilter" aria-label="Filter by priority">
+    <select class="filter-select"
+      [ngModel]="prioFilter()" (ngModelChange)="prioFilter.set($event)"
+      aria-label="Filter by priority">
       <option value="ALL">All priorities</option>
       <option value="LOW">Low</option>
       <option value="MEDIUM">Medium</option>
@@ -22,15 +26,15 @@
     </select>
   </div>
 
-  @if (isDirty) {
+  @if (isDirty()) {
     <div class="filter-meta">
-      <span>Showing <b>{{ filtered.length }}</b> of {{ requests.length }}</span>
+      <span>Showing <b>{{ filtered().length }}</b> of {{ requests().length }}</span>
       <button class="clear-f" (click)="clearFilters()">Clear filters</button>
     </div>
   }
 
-  <!-- Empty state -->
-  @if (requests.length === 0) {
+  <!-- Empty / filtered-empty / table -->
+  @if (requests().length === 0) {
     <div class="card">
       <div class="empty">
         <svg class="ic" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2 3h6l2-3h4M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5L5 5Z"/></svg>
@@ -42,7 +46,7 @@
         </button>
       </div>
     </div>
-  } @else if (filtered.length === 0) {
+  } @else if (filtered().length === 0) {
     <div class="card">
       <div class="empty">
         <p class="empty-t">No tickets match your filters</p>
@@ -52,16 +56,11 @@
   } @else {
     <div class="card data-list" role="table">
       <div class="dl-head" role="row">
-        <div>ID</div>
-        <div>Request</div>
-        <div>Priority</div>
-        <div>Status</div>
-        <div>Resolution SLA</div>
+        <div>ID</div><div>Request</div><div>Priority</div><div>Status</div><div>Resolution SLA</div>
       </div>
-      @for (r of filtered; track r.id) {
+      @for (r of filtered(); track r.id) {
         <div class="dl-row static" role="row">
           <div class="dl-id mono" data-h="ID">{{ ticketId(r.id) }}</div>
-
           <div class="dl-title" data-h="Request">
             <span class="t">
               {{ r.title }}
@@ -69,19 +68,10 @@
                 <svg class="ic warn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
               }
             </span>
-            <span class="m">
-              {{ CAT_LABEL[r.category] }} · opened {{ ago(r.createdAt) }}
-            </span>
+            <span class="m">{{ CAT_LABEL[r.category] }} · opened {{ ago(r.createdAt) }}</span>
           </div>
-
-          <div data-h="Priority">
-            <span class="chip p-{{ r.priority }}">{{ r.priority }}</span>
-          </div>
-
-          <div data-h="Status">
-            <span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span>
-          </div>
-
+          <div data-h="Priority"><span class="chip p-{{ r.priority }}">{{ r.priority }}</span></div>
+          <div data-h="Status"><span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span></div>
           <div data-h="Resolution SLA">
             <app-sla-badge [slaDeadline]="r.slaDeadline" [isOverdue]="r.isOverdue" />
           </div>

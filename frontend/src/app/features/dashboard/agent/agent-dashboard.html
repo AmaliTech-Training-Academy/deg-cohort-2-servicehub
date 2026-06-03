@@ -1,20 +1,22 @@
-@if (loading) {
+@if (loading()) {
   <p class="note" style="padding:40px 0">Loading tickets…</p>
-} @else if (error) {
-  <p class="form-err">{{ error }}</p>
+} @else if (error()) {
+  <p class="form-err">{{ error() }}</p>
 } @else {
   <!-- Filter bar -->
   <div class="filter-bar">
     <div class="filter-search">
       <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/></svg>
-      <input [(ngModel)]="q" placeholder="Search by title, ID or requester…" />
-      @if (q) {
-        <button class="clear" (click)="q = ''" aria-label="Clear search">
+      <input [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Search by title, ID or requester…" />
+      @if (q()) {
+        <button class="clear" (click)="q.set('')" aria-label="Clear search">
           <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       }
     </div>
-    <select class="filter-select" [(ngModel)]="statusFilter" aria-label="Filter by status">
+    <select class="filter-select"
+      [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
+      aria-label="Filter by status">
       <option value="ALL">All statuses</option>
       <option value="OPEN">Open</option>
       <option value="ASSIGNED">Assigned</option>
@@ -22,7 +24,9 @@
       <option value="RESOLVED">Resolved</option>
       <option value="CLOSED">Closed</option>
     </select>
-    <select class="filter-select" [(ngModel)]="prioFilter" aria-label="Filter by priority">
+    <select class="filter-select"
+      [ngModel]="prioFilter()" (ngModelChange)="prioFilter.set($event)"
+      aria-label="Filter by priority">
       <option value="ALL">All priorities</option>
       <option value="LOW">Low</option>
       <option value="MEDIUM">Medium</option>
@@ -33,14 +37,14 @@
 
   <!-- Meta line -->
   <div class="filter-meta">
-    <span>Showing <b>{{ filtered.length }}</b> of {{ requests.length }} {{ requests.length === 1 ? 'ticket' : 'tickets' }}</span>
-    @if (isDirty) {
+    <span>Showing <b>{{ filtered().length }}</b> of {{ requests().length }} {{ requests().length === 1 ? 'ticket' : 'tickets' }}</span>
+    @if (isDirty()) {
       <button class="clear-f" (click)="clearFilters()">Clear filters</button>
     }
   </div>
 
   <!-- Ticket table -->
-  @if (filtered.length === 0 && requests.length > 0) {
+  @if (filtered().length === 0 && requests().length > 0) {
     <div class="card">
       <div class="empty">
         <svg class="ic" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/></svg>
@@ -48,7 +52,7 @@
         <p class="empty-s">Try a different search or clear the filters.</p>
       </div>
     </div>
-  } @else if (requests.length === 0) {
+  } @else if (requests().length === 0) {
     <div class="card">
       <div class="empty">
         <svg class="ic" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2 3h6l2-3h4M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5L5 5Z"/></svg>
@@ -59,18 +63,11 @@
   } @else {
     <div class="card data-list" role="table">
       <div class="dl-head" role="row">
-        <div>ID</div>
-        <div>Request</div>
-        <div>Priority</div>
-        <div>Status</div>
-        <div>Resolution SLA</div>
+        <div>ID</div><div>Request</div><div>Priority</div><div>Status</div><div>Resolution SLA</div>
       </div>
-      @for (r of filtered; track r.id) {
+      @for (r of filtered(); track r.id) {
         <div class="dl-row static" role="row">
-          <!-- ID -->
           <div class="dl-id mono" data-h="ID">{{ ticketId(r.id) }}</div>
-
-          <!-- Request -->
           <div class="dl-title" data-h="Request">
             <span class="t">
               {{ r.title }}
@@ -86,23 +83,13 @@
               · {{ r.requesterName }} · opened {{ ago(r.createdAt) }}
             </span>
           </div>
-
-          <!-- Priority -->
-          <div data-h="Priority">
-            <span class="chip p-{{ r.priority }}">{{ r.priority }}</span>
-          </div>
-
-          <!-- Status -->
-          <div data-h="Status">
-            <span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span>
-          </div>
-
-          <!-- SLA + action -->
+          <div data-h="Priority"><span class="chip p-{{ r.priority }}">{{ r.priority }}</span></div>
+          <div data-h="Status"><span class="st st-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span></div>
           <div data-h="Resolution SLA" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <app-sla-badge [slaDeadline]="r.slaDeadline" [isOverdue]="r.isOverdue" />
             @if (nextStatus(r)) {
-              <button class="btn btn-ghost btn-sm" [disabled]="advancing.has(r.id)" (click)="advance(r)">
-                {{ advancing.has(r.id) ? '…' : '→ ' + nextLabel(r) }}
+              <button class="btn btn-ghost btn-sm" [disabled]="isAdvancing(r.id)" (click)="advance(r)">
+                {{ isAdvancing(r.id) ? '…' : '→ ' + nextLabel(r) }}
               </button>
             }
           </div>

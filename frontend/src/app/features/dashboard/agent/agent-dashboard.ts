@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService, ServiceRequestResponse } from '../../../core/services/dashboard.service';
 import { SlaBadge } from '../../../shared/components/sla-badge/sla-badge';
@@ -11,14 +11,14 @@ import { SlaBadge } from '../../../shared/components/sla-badge/sla-badge';
 export class AgentDashboard implements OnInit {
   private dashboardService = inject(DashboardService);
 
-  requests: ServiceRequestResponse[] = [];
-  loading = true;
-  error = '';
-  advancing = new Set<number>();
+  readonly loading = signal(true);
+  readonly error = signal('');
+  readonly requests = signal<ServiceRequestResponse[]>([]);
+  readonly advancing = signal(new Set<number>());
 
-  q = '';
-  statusFilter = 'ALL';
-  prioFilter = 'ALL';
+  readonly q = signal('');
+  readonly statusFilter = signal('ALL');
+  readonly prioFilter = signal('ALL');
 
   readonly NEXT_STATUS: Record<string, string> = {
     OPEN: 'ASSIGNED', ASSIGNED: 'IN_PROGRESS', IN_PROGRESS: 'RESOLVED',
@@ -38,46 +38,52 @@ export class AgentDashboard implements OnInit {
     OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed',
   };
 
-  ngOnInit(): void { this.load(); }
-
-  private load(): void {
-    this.loading = true;
-    this.dashboardService.getRequests(0, 20).subscribe({
-      next: p => { this.requests = p.content; this.loading = false; },
-      error: () => { this.error = 'Failed to load tickets.'; this.loading = false; },
-    });
-  }
-
-  get filtered(): ServiceRequestResponse[] {
-    return this.requests.filter(r => {
-      if (this.statusFilter !== 'ALL' && r.status !== this.statusFilter) return false;
-      if (this.prioFilter !== 'ALL' && r.priority !== this.prioFilter) return false;
-      if (this.q.trim()) {
-        const hay = (`${r.id} ${r.title} ${r.requesterName}`).toLowerCase();
-        if (!hay.includes(this.q.trim().toLowerCase())) return false;
+  readonly filtered = computed(() => {
+    const q = this.q().trim().toLowerCase();
+    return this.requests().filter(r => {
+      if (this.statusFilter() !== 'ALL' && r.status !== this.statusFilter()) return false;
+      if (this.prioFilter() !== 'ALL' && r.priority !== this.prioFilter()) return false;
+      if (q) {
+        const hay = `${r.id} ${r.title} ${r.requesterName}`.toLowerCase();
+        if (!hay.includes(q)) return false;
       }
       return true;
     });
+  });
+
+  readonly isDirty = computed(() =>
+    !!this.q().trim() || this.statusFilter() !== 'ALL' || this.prioFilter() !== 'ALL'
+  );
+
+  ngOnInit(): void { this.load(); }
+
+  private load(): void {
+    this.loading.set(true);
+    this.dashboardService.getRequests(0, 20).subscribe({
+      next: p => { this.requests.set(p.content); this.loading.set(false); },
+      error: () => { this.error.set('Failed to load tickets.'); this.loading.set(false); },
+    });
   }
 
-  get isDirty(): boolean { return !!this.q.trim() || this.statusFilter !== 'ALL' || this.prioFilter !== 'ALL'; }
-
-  clearFilters(): void { this.q = ''; this.statusFilter = 'ALL'; this.prioFilter = 'ALL'; }
+  clearFilters(): void { this.q.set(''); this.statusFilter.set('ALL'); this.prioFilter.set('ALL'); }
 
   nextStatus(r: ServiceRequestResponse): string | null { return this.NEXT_STATUS[r.status] ?? null; }
   nextLabel(r: ServiceRequestResponse): string { return this.NEXT_LABEL[r.status] ?? ''; }
+  isAdvancing(id: number): boolean { return this.advancing().has(id); }
 
   advance(r: ServiceRequestResponse): void {
     const ns = this.nextStatus(r);
-    if (!ns || this.advancing.has(r.id)) return;
-    this.advancing.add(r.id);
+    if (!ns || this.isAdvancing(r.id)) return;
+
+    this.advancing.update(s => new Set([...s, r.id]));
     this.dashboardService.updateStatus(r.id, ns).subscribe({
       next: updated => {
-        const idx = this.requests.findIndex(x => x.id === updated.id);
-        if (idx >= 0) this.requests[idx] = updated;
-        this.advancing.delete(r.id);
+        this.requests.update(list => list.map(x => x.id === updated.id ? updated : x));
+        this.advancing.update(s => { const n = new Set(s); n.delete(r.id); return n; });
       },
-      error: () => this.advancing.delete(r.id),
+      error: () => {
+        this.advancing.update(s => { const n = new Set(s); n.delete(r.id); return n; });
+      },
     });
   }
 
