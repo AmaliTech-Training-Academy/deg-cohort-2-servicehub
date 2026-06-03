@@ -22,6 +22,9 @@ export class SlaTagComponent implements OnChanges {
 
   private compute(): SlaState {
     if (this.isOverdue) {
+      if (!this.slaDeadline) {
+        return { cls: 'breach', label: 'Overdue', showAlert: true };
+      }
       const over = this.minutesOver();
       return { cls: 'breach', label: this.formatDuration(over) + ' overdue', showAlert: true };
     }
