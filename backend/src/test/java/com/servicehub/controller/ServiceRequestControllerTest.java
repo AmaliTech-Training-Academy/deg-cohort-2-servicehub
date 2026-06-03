@@ -413,6 +413,15 @@ class ServiceRequestControllerTest {
     }
 
     @Test
+    void updateStatus_asEmployee_returns403() throws Exception {
+        mockMvc.perform(put("/api/requests/1/status")
+                        .header("Authorization", "Bearer " + employeeToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newStatus\":\"ASSIGNED\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void updateStatus_managerCanAdvanceStatus() throws Exception {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("ASSIGNED");
