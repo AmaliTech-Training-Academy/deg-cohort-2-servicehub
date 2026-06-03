@@ -25,4 +25,5 @@ public class ServiceRequestResponse {
     private String slaStatus;
     private Long responseTimeMinutes;
     private Long resolutionTimeMinutes;
+    private Boolean slaBreached;
 }

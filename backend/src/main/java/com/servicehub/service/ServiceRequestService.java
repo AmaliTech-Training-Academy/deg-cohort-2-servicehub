@@ -148,6 +148,7 @@ public class ServiceRequestService {
                 .slaStatus(slaStatus)
                 .responseTimeMinutes(responseTimeMinutes)
                 .resolutionTimeMinutes(resolutionTimeMinutes)
+                .slaBreached(req.isSlaBreached())
                 .build();
     }
 }
