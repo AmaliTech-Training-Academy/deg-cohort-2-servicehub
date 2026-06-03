@@ -1,4 +1,5 @@
 """ETL Pipeline for ServiceHub - SLA Analytics & Resolution Metrics"""
+import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 from config import DATABASE_URL
@@ -158,7 +159,9 @@ def transform_department_workload(requests_df):
 
 def load_analytics(df, table_name):
     df.to_sql(table_name, engine, if_exists="replace", index=False)
-    print(f"Loaded {len(df)} rows into {table_name}")
+    os.makedirs("output", exist_ok=True)
+    df.to_csv(f"output/{table_name}.csv", index=False)
+    print(f"Loaded {len(df)} rows into {table_name} (CSV: output/{table_name}.csv)")
 
 def run_pipeline():
     print("Starting ServiceHub ETL pipeline...")
