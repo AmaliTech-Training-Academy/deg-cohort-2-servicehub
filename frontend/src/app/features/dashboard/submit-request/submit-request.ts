@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DashboardService } from '../../../core/services/dashboard.service';
@@ -21,8 +21,8 @@ export class SubmitRequestComponent {
   });
 
   touched = false;
-  loading = false;
-  error = '';
+  readonly loading = signal(false);
+  readonly error = signal('');
 
   readonly CATEGORIES = [
     { value: 'IT_SUPPORT', label: 'IT Support',  dept: 'IT Support',  iconPath: 'M5 6h14v9H5zM3 19h18l-1-2H4l-1 2Z' },
@@ -51,14 +51,14 @@ export class SubmitRequestComponent {
     this.touched = true;
     if (this.form.invalid) return;
 
-    this.loading = true;
-    this.error = '';
+    this.loading.set(true);
+    this.error.set('');
     const { title, category, priority, description } = this.form.getRawValue();
     this.dashboardService.createRequest({ title, category, priority, description }).subscribe({
-      next: () => { this.loading = false; this.router.navigateByUrl('/my-dashboard'); },
+      next: () => { this.loading.set(false); this.router.navigateByUrl('/my-dashboard'); },
       error: err => {
-        this.error = err?.error?.error ?? 'Failed to submit request. Please try again.';
-        this.loading = false;
+        this.error.set(err?.error?.error ?? 'Failed to submit request. Please try again.');
+        this.loading.set(false);
       },
     });
   }
