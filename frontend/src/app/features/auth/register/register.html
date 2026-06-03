@@ -9,8 +9,8 @@
       </div>
     </div>
 
-    <h1>Sign in</h1>
-    <p class="sub">Welcome back. Sign in to submit and track your requests.</p>
+    <h1>Create your account</h1>
+    <p class="sub">Set up your account to start submitting service requests.</p>
 
     @if (error) {
       <div class="form-err">
@@ -21,8 +21,20 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()">
       <div class="field">
-        <label for="email">Email</label>
-        <input id="email" type="email" formControlName="email" placeholder="you@amalitech.com"
+        <label for="reg_name">Full name</label>
+        <input id="reg_name" type="text" formControlName="name" placeholder="Your full name"
+          [class.invalid]="form.get('name')!.invalid && form.get('name')!.touched" />
+        @if (form.get('name')!.invalid && form.get('name')!.touched) {
+          <p class="err">
+            <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+            Please enter your full name.
+          </p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="reg_email">Email</label>
+        <input id="reg_email" type="email" formControlName="email" placeholder="you@amalitech.com"
           [class.invalid]="form.get('email')!.invalid && form.get('email')!.touched" />
         @if (form.get('email')!.invalid && form.get('email')!.touched) {
           <p class="err">
@@ -33,26 +45,36 @@
       </div>
 
       <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" formControlName="password" placeholder="••••••••"
+        <label for="reg_pw">Password</label>
+        <input id="reg_pw" type="password" formControlName="password" placeholder="At least 6 characters"
           [class.invalid]="form.get('password')!.invalid && form.get('password')!.touched" />
         @if (form.get('password')!.invalid && form.get('password')!.touched) {
           <p class="err">
             <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
-            Password is required.
+            Use at least 6 characters.
           </p>
         }
       </div>
 
+      <div class="field">
+        <label for="reg_dept">Department</label>
+        <select id="reg_dept" class="field-select" formControlName="department">
+          <option value="">None</option>
+          <option value="IT_SUPPORT">IT Support</option>
+          <option value="FACILITIES">Facilities</option>
+          <option value="HR_REQUEST">HR Request</option>
+        </select>
+      </div>
+
       <button type="submit" class="enter" [disabled]="loading">
-        {{ loading ? 'Signing in…' : 'Sign in' }}
+        {{ loading ? 'Creating account…' : 'Create account' }}
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </form>
 
     <p class="auth-swap">
-      New to ServiceHub?&nbsp;
-      <a [routerLink]="'/register'">Create an account</a>
+      Already have an account?&nbsp;
+      <a [routerLink]="'/login'">Sign in</a>
     </p>
   </div>
 </div>
