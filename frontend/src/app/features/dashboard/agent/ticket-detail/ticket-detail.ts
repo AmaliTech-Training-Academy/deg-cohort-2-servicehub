@@ -14,6 +14,7 @@ export class TicketDetailComponent implements OnChanges {
   private dashboardService = inject(DashboardService);
 
   @Input({ required: true }) request!: ServiceRequestResponse;
+  @Input() readonly = false;
   @Output() back = new EventEmitter<void>();
   @Output() advanced = new EventEmitter<ServiceRequestResponse>();
 

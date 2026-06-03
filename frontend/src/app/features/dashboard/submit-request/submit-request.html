@@ -12,56 +12,76 @@
 
     <!-- Title -->
     <div class="form-row">
-      <label for="f_title">Title</label>
-      <input id="f_title" type="text" formControlName="title" placeholder="e.g. Monitor won't turn on"
+      <label for="f_title">
+        Title
+        <span class="hint" style="float:right;font-weight:400">{{ titleLength }}/100</span>
+      </label>
+      <input id="f_title" type="text" formControlName="title"
+        placeholder="e.g. Monitor won't turn on"
         [class.invalid]="fieldInvalid('title')" />
       @if (fieldInvalid('title')) {
         <p class="err">
           <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
-          Give your request a title (at least 6 characters).
+          @if (form.get('title')!.hasError('required')) { Title is required. }
+          @else if (form.get('title')!.hasError('minlength')) { Give your request a short title (at least 6 characters). }
+          @else if (form.get('title')!.hasError('maxlength')) { Title cannot exceed 100 characters. }
         </p>
       }
     </div>
 
     <!-- Category -->
     <div class="form-row">
-      <p style="font-size:13px;font-weight:700;margin-bottom:8px">Category <span class="hint">— sets the department</span></p>
-      <div class="seg">
+      <label for="f_cat">Category <span class="hint">— sets the department</span></label>
+      <select id="f_cat" class="field-select" formControlName="category"
+        [class.invalid]="fieldInvalid('category')">
+        <option value="" disabled>Select a category</option>
         @for (cat of CATEGORIES; track cat.value) {
-          <button type="button" class="seg-btn" [class.on]="form.get('category')!.value === cat.value"
-            (click)="setCategory(cat.value)">
-            <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="cat.iconPath" /></svg>
-            {{ cat.label }}
-          </button>
+          <option [value]="cat.value">{{ cat.label }}</option>
         }
-      </div>
-      <div class="route-pill">
-        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h6M6 3a2 2 0 1 0-.001-.001M18 21a2 2 0 1 0 .001-.001M18 21l3-3-3-3"/></svg>
-        Routes to the <strong style="margin-left:3px">{{ selectedCategory.dept }}</strong> team
-      </div>
+      </select>
+      @if (selectedCategory) {
+        <div class="route-pill">
+          <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h6M6 3a2 2 0 1 0-.001-.001M18 21a2 2 0 1 0 .001-.001M18 21l3-3-3-3"/></svg>
+          Routes to the <strong style="margin-left:3px">{{ selectedCategory.dept }}</strong> team
+        </div>
+      }
+      @if (fieldInvalid('category')) {
+        <p class="err">
+          <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+          Please select a category.
+        </p>
+      }
     </div>
 
     <!-- Priority -->
     <div class="form-row">
-      <p style="font-size:13px;font-weight:700;margin-bottom:8px">Priority <span class="hint">— sets the SLA deadlines</span></p>
-      <div class="seg">
+      <label for="f_prio">Priority <span class="hint">— sets the SLA deadlines</span></label>
+      <select id="f_prio" class="field-select" formControlName="priority"
+        [class.invalid]="fieldInvalid('priority')">
+        <option value="" disabled>Select a priority</option>
         @for (p of PRIORITIES; track p.value) {
-          <button type="button" class="seg-btn" [class.on]="form.get('priority')!.value === p.value"
-            (click)="setPriority(p.value)">
-            {{ p.value }}
-          </button>
+          <option [value]="p.value">{{ p.value }}</option>
         }
-      </div>
-      <div class="sla-preview">
-        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/></svg>
-        Respond within <strong style="margin:0 3px">{{ selectedPriority.respondH }}h</strong> · resolve within <strong style="margin:0 3px">{{ selectedPriority.resolveH }}h</strong>
-      </div>
+      </select>
+      @if (selectedPriority) {
+        <div class="sla-preview">
+          <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/></svg>
+          Respond within <strong style="margin:0 3px">{{ selectedPriority.respondH }}h</strong> · resolve within <strong style="margin:0 3px">{{ selectedPriority.resolveH }}h</strong>
+        </div>
+      }
+      @if (fieldInvalid('priority')) {
+        <p class="err">
+          <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+          Please select a priority.
+        </p>
+      }
     </div>
 
     <!-- Description -->
     <div class="form-row">
       <label for="f_desc">Description</label>
-      <textarea id="f_desc" formControlName="description" placeholder="Describe the issue or request…"
+      <textarea id="f_desc" formControlName="description"
+        placeholder="Describe the issue or request…"
         [class.invalid]="fieldInvalid('description')"></textarea>
       @if (fieldInvalid('description')) {
         <p class="err">
