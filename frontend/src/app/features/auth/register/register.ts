@@ -24,8 +24,8 @@ export class RegisterComponent implements OnInit {
     department: ['', Validators.required],
   });
 
-  error = '';
-  loading = false;
+  readonly error = signal('');
+  readonly loading = signal(false);
 
   ngOnInit(): void {
     this.authService.getDepartments().subscribe({
@@ -40,15 +40,15 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
-    this.error = '';
+    this.loading.set(true);
+    this.error.set('');
 
     const { name, email, password, department } = this.form.getRawValue();
     this.authService.register({ name, email, password, department }).subscribe({
-      next: () => { this.loading = false; this.router.navigateByUrl(this.authService.getDashboardRoute()); },
+      next: () => { this.loading.set(false); this.router.navigateByUrl(this.authService.getDashboardRoute()); },
       error: (err) => {
-        this.error = err?.error?.error ?? 'Registration failed. Please try again.';
-        this.loading = false;
+        this.error.set(err?.error?.error ?? 'Registration failed. Please try again.');
+        this.loading.set(false);
       },
     });
   }
