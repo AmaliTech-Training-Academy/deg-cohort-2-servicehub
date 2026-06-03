@@ -3,7 +3,7 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.EmbeddedDatabaseAutoConfiguration
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=value
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false;NON_KEYWORDS=value
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
@@ -16,9 +16,12 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
+  sql:
+    init:
+      mode: never
   thymeleaf:
     cache: false
 
 jwt:
-  secret: test-secret-key-for-testing-purposes-only-minimum-32-chars
+  secret: testSecretKeyForJWTtokenGeneration12345678901234567890
   expiration: 86400000

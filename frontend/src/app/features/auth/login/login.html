@@ -1,41 +1,58 @@
-<div class="min-h-screen flex items-center justify-center bg-gray-50">
-  <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Sign in to ServiceHub</h2>
+<div class="login-page">
+  <div class="grain"></div>
+  <div class="login-card">
+    <div class="brand" style="margin-bottom:26px">
+      <div class="logo" style="width:40px;height:40px;font-size:20px">S</div>
+      <div class="bt">
+        <b>ServiceHub</b>
+        <span>Internal Service Desk</span>
+      </div>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
-      @if (error) {
-        <p class="text-sm text-red-600 bg-red-50 px-4 py-2 rounded">{{ error }}</p>
-      }
+    <h1>Sign in</h1>
+    <p class="sub">Welcome back. Sign in to submit and track your requests.</p>
 
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          placeholder="you@example.com"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+    @if (error) {
+      <div class="form-err">
+        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+        {{ error }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="you@amalitech.com"
+          [class.invalid]="form.get('email')!.invalid && form.get('email')!.touched" />
+        @if (form.get('email')!.invalid && form.get('email')!.touched) {
+          <p class="err">
+            <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+            Enter a valid email address.
+          </p>
+        }
       </div>
 
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="••••••••"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" placeholder="••••••••"
+          [class.invalid]="form.get('password')!.invalid && form.get('password')!.touched" />
+        @if (form.get('password')!.invalid && form.get('password')!.touched) {
+          <p class="err">
+            <svg class="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+            Password is required.
+          </p>
+        }
       </div>
 
-      <button
-        type="submit"
-        [disabled]="loading"
-        class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors"
-      >
-        {{ loading ? 'Signing in...' : 'Sign in' }}
+      <button type="submit" class="enter" [disabled]="loading">
+        {{ loading ? 'Signing in…' : 'Sign in' }}
+        <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </form>
+
+    <p class="auth-swap">
+      New to ServiceHub?&nbsp;
+      <a [routerLink]="'/register'">Create an account</a>
+    </p>
   </div>
 </div>
