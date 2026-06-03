@@ -1,4 +1,4 @@
--- V5: Sample service request data for ETL testing, SLA breach testing, and dashboard development
+-- V6: Sample service request data for ETL testing, SLA breach testing, and dashboard development
 -- 55 requests spread across all categories, priorities, and statuses
 -- Includes: 7 overdue (past sla_deadline, not resolved), 22 resolved within SLA,
 --           10 resolved with SLA breach, 16 active (future sla_deadline)
@@ -622,3 +622,10 @@ INSERT INTO service_requests (
 
 -- Reset sequence so new inserts don't collide with seeded IDs
 SELECT setval('service_requests_id_seq', (SELECT MAX(id) FROM service_requests));
+
+-- Mark SLA breaches — matches V5 sla_breach_flag column (DEFAULT false for all others)
+-- IDs 1–7:   overdue-and-unresolved (past sla_deadline, status ≠ RESOLVED/CLOSED)
+-- IDs 20–29: historically breached (resolved_at > sla_deadline)
+UPDATE service_requests
+SET sla_breached = true
+WHERE id IN (1, 2, 3, 4, 5, 6, 7, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
