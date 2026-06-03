@@ -8,6 +8,7 @@ import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
+import com.servicehub.dto.StatusTransitionLogResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,7 @@ class ServiceRequestServiceTest {
     @Mock private SlaPolicyRepository slaPolicyRepository;
     @Mock private WorkflowService workflowService;
     @Mock private SlaService slaService;
+    @Mock private StatusTransitionLogRepository transitionLogRepository;
 
     @InjectMocks private ServiceRequestService service;
 
@@ -99,7 +101,8 @@ class ServiceRequestServiceTest {
 
         lenient().when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
         lenient().when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
-        lenient().when(workflowService.updateStatus(anyLong(), anyString(), anyString())).thenReturn(openRequest);
+        lenient().when(workflowService.updateStatus(anyLong(), anyString(), anyString(), any())).thenReturn(openRequest);
+        lenient().when(transitionLogRepository.findByRequestIdOrderByChangedAtAsc(anyLong())).thenReturn(List.of());
     }
 
 
@@ -418,7 +421,7 @@ class ServiceRequestServiceTest {
 
         ServiceRequest assigned = requestWithStatus(RequestStatus.ASSIGNED);
         assigned.setAssignedTo(agent);
-        when(workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com")).thenReturn(assigned);
+        when(workflowService.updateStatus(eq(1L), eq("ASSIGNED"), eq("agent@test.com"), any())).thenReturn(assigned);
 
         ServiceRequestResponse result = service.updateStatus(1L, update, "agent@test.com");
 
@@ -431,7 +434,7 @@ class ServiceRequestServiceTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("IN_PROGRESS");
 
-        when(workflowService.updateStatus(2L, "IN_PROGRESS", "agent@test.com"))
+        when(workflowService.updateStatus(eq(2L), eq("IN_PROGRESS"), eq("agent@test.com"), any()))
                 .thenReturn(requestWithStatus(RequestStatus.IN_PROGRESS));
 
         ServiceRequestResponse result = service.updateStatus(2L, update, "agent@test.com");
@@ -446,7 +449,7 @@ class ServiceRequestServiceTest {
 
         ServiceRequest resolved = requestWithStatus(RequestStatus.RESOLVED);
         resolved.setResolvedAt(LocalDateTime.now());
-        when(workflowService.updateStatus(3L, "RESOLVED", "agent@test.com")).thenReturn(resolved);
+        when(workflowService.updateStatus(eq(3L), eq("RESOLVED"), eq("agent@test.com"), any())).thenReturn(resolved);
 
         ServiceRequestResponse result = service.updateStatus(3L, update, "agent@test.com");
 
@@ -458,7 +461,7 @@ class ServiceRequestServiceTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("CLOSED");
 
-        when(workflowService.updateStatus(4L, "CLOSED", "agent@test.com"))
+        when(workflowService.updateStatus(eq(4L), eq("CLOSED"), eq("agent@test.com"), any()))
                 .thenReturn(requestWithStatus(RequestStatus.CLOSED));
 
         ServiceRequestResponse result = service.updateStatus(4L, update, "agent@test.com");
@@ -496,7 +499,7 @@ class ServiceRequestServiceTest {
     @ValueSource(strings = {"OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED"})
     void updateStatus_closedToAnyStatus_throwsInvalidTransition(String targetStatus) {
         ServiceRequest closed = requestWithStatus(RequestStatus.CLOSED);
-        when(workflowService.updateStatus(closed.getId(), targetStatus, "agent@test.com"))
+        when(workflowService.updateStatus(eq(closed.getId()), eq(targetStatus), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException("Invalid status transition: CLOSED -> " + targetStatus));
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus(targetStatus);
@@ -560,7 +563,7 @@ class ServiceRequestServiceTest {
     }
 
     private void expectInvalidTransition(ServiceRequest request, String targetStatus) {
-        when(workflowService.updateStatus(request.getId(), targetStatus, "agent@test.com"))
+        when(workflowService.updateStatus(eq(request.getId()), eq(targetStatus), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException(
                         "Invalid status transition: " + request.getStatus() + " -> " + targetStatus));
         StatusUpdateRequest update = new StatusUpdateRequest();

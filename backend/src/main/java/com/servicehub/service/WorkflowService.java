@@ -3,9 +3,11 @@ package com.servicehub.service;
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.ServiceRequest;
+import com.servicehub.model.StatusTransitionLog;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.repository.StatusTransitionLogRepository;
 import com.servicehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,15 +20,17 @@ public class WorkflowService {
 
     private final ServiceRequestRepository requestRepository;
     private final UserRepository userRepository;
+    private final StatusTransitionLogRepository transitionLogRepository;
 
-    public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail) {
+    public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail, String comment) {
         ServiceRequest req = requestRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Request not found"));
         User agent = userRepository.findByEmail(agentEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         RequestStatus next = RequestStatus.valueOf(newStatus);
-        validateTransition(req.getStatus(), next);
+        RequestStatus previous = req.getStatus();
+        validateTransition(previous, next);
 
         LocalDateTime now = LocalDateTime.now();
         req.setStatus(next);
@@ -38,7 +42,19 @@ public class WorkflowService {
         if (next == RequestStatus.RESOLVED) {
             req.setResolvedAt(now);
         }
-        return requestRepository.save(req);
+
+        ServiceRequest saved = requestRepository.save(req);
+
+        transitionLogRepository.save(StatusTransitionLog.builder()
+                .request(saved)
+                .fromStatus(previous)
+                .toStatus(next)
+                .changedBy(agent)
+                .comment(comment)
+                .changedAt(now)
+                .build());
+
+        return saved;
     }
 
     void validateTransition(RequestStatus current, RequestStatus next) {
