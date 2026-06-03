@@ -106,7 +106,7 @@ public class ServiceRequestService {
     }
 
     public ServiceRequestResponse updateStatus(Long id, StatusUpdateRequest update, String agentEmail) {
-        return toResponse(workflowService.updateStatus(id, update.getNewStatus(), agentEmail));
+        return toResponse(workflowService.updateStatus(id, update.getNewStatus(), agentEmail, update.getComment()));
     }
 
     public ServiceRequestResponse toResponse(ServiceRequest req) {
