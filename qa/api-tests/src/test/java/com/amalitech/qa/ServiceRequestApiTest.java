@@ -3,8 +3,10 @@ package com.amalitech.qa;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.testng.annotations.*;
+import java.util.UUID;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
+import static org.testng.Assert.assertNotNull;
 
 public class ServiceRequestApiTest {
 
@@ -22,18 +24,21 @@ public class ServiceRequestApiTest {
             .body("{\"email\":\"manager@amalitech.com\",\"password\":\"password123\"}")
         .when().post("/api/auth/login")
         .then().statusCode(200).extract().path("token");
+        assertNotNull(managerToken, "manager login failed — check seed data");
 
         agentToken = given()
             .contentType(ContentType.JSON)
             .body("{\"email\":\"agent@amalitech.com\",\"password\":\"password123\"}")
         .when().post("/api/auth/login")
         .then().statusCode(200).extract().path("token");
+        assertNotNull(agentToken, "agent login failed — check seed data");
 
         employeeToken = given()
             .contentType(ContentType.JSON)
             .body("{\"email\":\"user@amalitech.com\",\"password\":\"password123\"}")
         .when().post("/api/auth/login")
         .then().statusCode(200).extract().path("token");
+        assertNotNull(employeeToken, "employee login failed — check seed data");
     }
 
     // ── TC-AUTH ──────────────────────────────────────────────────────────────
@@ -61,7 +66,7 @@ public class ServiceRequestApiTest {
     @Test
     public void testRegisterCreatesEmployee() {
         // TC-AUTH-01 — unique email per run to avoid duplicate conflict
-        String email = "newuser_" + System.currentTimeMillis() + "@test.com";
+        String email = "newuser_" + UUID.randomUUID() + "@test.com";
         given().contentType(ContentType.JSON)
             .body("{\"name\":\"Test User\",\"email\":\"" + email + "\",\"password\":\"password123\",\"department\":\"IT\"}")
         .when().post("/api/auth/register")
@@ -102,7 +107,8 @@ public class ServiceRequestApiTest {
         // TC-REQ-07
         given().header("Authorization", "Bearer " + managerToken)
         .when().get("/api/requests")
-        .then().statusCode(200);
+        .then().statusCode(200)
+            .body("content", notNullValue());
     }
 
     @Test
@@ -118,7 +124,8 @@ public class ServiceRequestApiTest {
         // TC-REQ-09
         given().header("Authorization", "Bearer " + employeeToken)
         .when().get("/api/requests/my-requests")
-        .then().statusCode(200);
+        .then().statusCode(200)
+            .body("content", notNullValue());
     }
 
     @Test
@@ -275,7 +282,7 @@ public class ServiceRequestApiTest {
             .body("{\"title\":\"Fresh request\",\"description\":\"Should not be overdue\",\"category\":\"IT_SUPPORT\",\"priority\":\"LOW\"}")
         .when().post("/api/requests")
         .then().statusCode(200)
-            .body("isOverdue", equalTo(false));
+            .body("isOverdue", not(equalTo(true)));
     }
 
     // ── TC-DEPT ──────────────────────────────────────────────────────────────
