@@ -15,8 +15,15 @@ public class ServiceRequestResponse {
     private String assignedToName;
     private String requesterName;
     private LocalDateTime slaDeadline;
+    private LocalDateTime responseDeadline;
+    private LocalDateTime firstResponseAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
     private Boolean isOverdue;
+    private Boolean isResponseOverdue;
+    private String slaStatus;
+    private Long responseTimeMinutes;
+    private Long resolutionTimeMinutes;
+    private Boolean slaBreached;
 }
