@@ -56,11 +56,11 @@ public class ServiceRequestApiTest {
 
     @Test
     public void testLoginWrongPassword() {
-        // TC-AUTH-05
+        // TC-AUTH-05 — UnauthorizedException → 401 (not 400; fixed in GlobalExceptionHandler PR #37)
         given().contentType(ContentType.JSON)
             .body("{\"email\":\"manager@amalitech.com\",\"password\":\"wrongpassword\"}")
         .when().post("/api/auth/login")
-        .then().statusCode(400);
+        .then().statusCode(401);
     }
 
     @Test
@@ -77,11 +77,11 @@ public class ServiceRequestApiTest {
 
     @Test
     public void testRegisterDuplicateEmail() {
-        // TC-AUTH-02
+        // TC-AUTH-02 — EmailAlreadyExistsException → 409 (fixed in GlobalExceptionHandler PR #37)
         given().contentType(ContentType.JSON)
             .body("{\"name\":\"Manager User\",\"email\":\"manager@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}")
         .when().post("/api/auth/register")
-        .then().statusCode(400);
+        .then().statusCode(409);
     }
 
     @Test
@@ -121,11 +121,20 @@ public class ServiceRequestApiTest {
 
     @Test
     public void testGetMyRequests() {
-        // TC-REQ-09
+        // TC-REQ-09 — create a request first so the list is provably non-empty
+        given()
+            .contentType(ContentType.JSON)
+            .header("Authorization", "Bearer " + employeeToken)
+            .body("{\"title\":\"My visibility test\",\"description\":\"Should appear in my-requests\",\"category\":\"IT_SUPPORT\",\"priority\":\"LOW\"}")
+        .when().post("/api/requests")
+        .then().statusCode(200);
+
         given().header("Authorization", "Bearer " + employeeToken)
         .when().get("/api/requests/my-requests")
         .then().statusCode(200)
-            .body("content", notNullValue());
+            .body("content", notNullValue())
+            .body("content.size()", greaterThan(0))
+            .body("content[0].title", equalTo("My visibility test"));
     }
 
     @Test
