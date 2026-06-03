@@ -12,7 +12,7 @@ interface NavItem {
 const NAV: Record<string, NavItem[]> = {
   EMPLOYEE: [
     { icon: 'home', label: 'My Requests',    route: '/my-dashboard' },
-    { icon: 'plus', label: 'Submit Request',  route: '/submit-request' },
+    { icon: 'plus', label: 'Submit Request',  route: '/requests/submit' },
   ],
   AGENT: [
     { icon: 'inbox', label: 'Department Queue', route: '/agent-dashboard' },
@@ -69,7 +69,7 @@ export class DashboardShell implements OnInit {
   }
   get isEmployee(): boolean { return this.role === 'EMPLOYEE'; }
   get showNewRequestCta(): boolean {
-    return this.isEmployee && !this.router.url.startsWith('/submit-request');
+    return this.isEmployee && !this.router.url.startsWith('/requests/submit');
   }
 
   iconPath(name: string): string { return ICONS[name] ?? ''; }

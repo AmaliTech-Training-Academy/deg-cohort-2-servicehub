@@ -55,5 +55,5 @@ export class EmployeeDashboard implements OnInit {
   }
 
   ticketId(id: number): string { return 'SH-' + id; }
-  goSubmit(): void { this.router.navigateByUrl('/submit-request'); }
+  goSubmit(): void { this.router.navigateByUrl('/requests/submit'); }
 }

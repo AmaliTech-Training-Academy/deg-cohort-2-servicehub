@@ -36,7 +36,7 @@ export const routes: Routes = [
         data: { title: 'My Requests', subtitle: 'Your submitted tickets' },
       },
       {
-        path: 'submit-request',
+        path: 'requests/submit',
         component: SubmitRequestComponent,
         canActivate: [roleGuard('EMPLOYEE')],
         data: { title: 'Submit Request', subtitle: 'New service request' },
