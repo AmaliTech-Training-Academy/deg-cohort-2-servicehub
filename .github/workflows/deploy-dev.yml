@@ -1,27 +1,13 @@
-# name: Deploy to DEV
+# Deploy to DEV — disabled until the dev server is provisioned.
+# To enable: uncomment the trigger and job below, and add
+# DEV_SERVER_HOST, DEV_SERVER_USER, DEV_SERVER_SSH_KEY as repository secrets.
 
-# on:
-#   push:
-#     branches: [dev]
+on:
+  workflow_dispatch: # manual trigger only until fully configured
 
-# jobs:
-#   deploy:
-#     name: Deploy to DEV server
-#     runs-on: ubuntu-latest
-#     environment: dev
-#     steps:
-#       - uses: appleboy/ssh-action@v1
-#         with:
-#           host: ${{ secrets.DEV_SERVER_HOST }}
-#           username: ${{ secrets.DEV_SERVER_USER }}
-#           key: ${{ secrets.DEV_SERVER_SSH_KEY }}
-#           script: |
-#             cd /opt/app
-#             git fetch origin
-#             git checkout dev
-#             git pull origin dev
-#             docker compose -f docker-compose.yml \
-#                            -f docker-compose.dev.yml \
-#                            up -d --build
-#             docker system prune -f
-#             docker compose ps
+jobs:
+  placeholder:
+    name: Deploy to DEV (not configured)
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dev deployment is not configured yet."
