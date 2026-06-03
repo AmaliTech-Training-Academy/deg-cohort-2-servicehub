@@ -28,6 +28,7 @@ public class ServiceRequestController {
     private final SlaService slaService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER')")
     @Operation(summary = "List all requests (paginated)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Page of service requests"),
@@ -58,13 +59,17 @@ public class ServiceRequestController {
     @Operation(summary = "Get a single request by ID")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Request found"),
-        @ApiResponse(responseCode = "400", description = "Request not found",
+        @ApiResponse(responseCode = "404", description = "Request not found",
                 content = @Content(schema = @Schema(example = "{\"error\": \"Request not found\"}"))),
         @ApiResponse(responseCode = "401", description = "Missing or invalid token",
-                content = @Content(schema = @Schema(example = "{\"error\": \"Unauthorized: missing or invalid token\"}")))
+                content = @Content(schema = @Schema(example = "{\"error\": \"Unauthorized: missing or invalid token\"}"))),
+        @ApiResponse(responseCode = "403", description = "EMPLOYEE accessing another user's request",
+                content = @Content(schema = @Schema(example = "{\"error\": \"Access denied: you can only view your own requests\"}")))
     })
-    public ResponseEntity<ServiceRequestResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(requestService.getRequestById(id));
+    public ResponseEntity<ServiceRequestResponse> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal String email) {
+        return ResponseEntity.ok(requestService.getRequestById(id, email));
     }
 
     @PostMapping
