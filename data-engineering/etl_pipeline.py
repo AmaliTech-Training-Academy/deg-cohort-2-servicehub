@@ -84,6 +84,56 @@ def transform_sla_breaches(requests_df):
     return result
 
 
+def transform_agent_performance(requests_df):
+    """Per-agent resolution and response time metrics.
+
+    Groups by assigned_to_id. Computes resolution throughput, average hours,
+    and response SLA compliance rate (first_response_at <= response_deadline).
+    Requests with no assigned_to_id (OPEN, unassigned) are excluded.
+    """
+    if requests_df.empty:
+        return pd.DataFrame()
+
+    df = requests_df[requests_df["assigned_to_id"].notna()].copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
+    df["resolved_at"] = pd.to_datetime(df["resolved_at"], utc=True)
+    df["first_response_at"] = pd.to_datetime(df["first_response_at"], utc=True)
+    df["response_deadline"] = pd.to_datetime(df["response_deadline"], utc=True)
+
+    resolved = df[df["resolved_at"].notna()].copy()
+    resolved["resolution_hours"] = (
+        resolved["resolved_at"] - resolved["created_at"]
+    ).dt.total_seconds() / 3600
+
+    responded = df[df["first_response_at"].notna()].copy()
+    responded["response_hours"] = (
+        responded["first_response_at"] - responded["created_at"]
+    ).dt.total_seconds() / 3600
+    responded["response_sla_met"] = responded["first_response_at"] <= responded["response_deadline"]
+
+    total = df.groupby("assigned_to_id").agg(
+        total_assigned=("id", "count")
+    ).reset_index()
+
+    res_stats = resolved.groupby("assigned_to_id").agg(
+        total_resolved=("id", "count"),
+        avg_resolution_hours=("resolution_hours", "mean"),
+        max_resolution_hours=("resolution_hours", "max"),
+    ).reset_index()
+
+    resp_stats = responded.groupby("assigned_to_id").agg(
+        avg_response_hours=("response_hours", "mean"),
+        response_sla_compliance_rate=("response_sla_met", "mean"),
+    ).reset_index()
+
+    result = total.merge(res_stats, on="assigned_to_id", how="left")
+    result = result.merge(resp_stats, on="assigned_to_id", how="left")
+    return result
+
+
 def load_analytics(df, table_name):
     df.to_sql(table_name, engine, if_exists="replace", index=False)
     print(f"Loaded {len(df)} rows into {table_name}")
@@ -106,7 +156,10 @@ def run_pipeline():
     if not sla_breaches.empty:
         load_analytics(sla_breaches, "analytics_sla_breaches")
 
-    # TODO: Add agent performance metrics
+    agent_perf = transform_agent_performance(requests_df)
+    if not agent_perf.empty:
+        load_analytics(agent_perf, "analytics_agent_performance")
+
     # TODO: Add department workload analysis
     print("ETL pipeline complete!")
 
