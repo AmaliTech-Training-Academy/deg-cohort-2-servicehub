@@ -21,3 +21,6 @@ frontend/build/
 # OS
 .DS_Store
 Thumbs.db
+
+# ETL generated output
+data-engineering/output/*.csv
