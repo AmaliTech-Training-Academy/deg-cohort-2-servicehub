@@ -8,16 +8,19 @@ import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class WorkflowService {
 
     private final ServiceRequestRepository requestRepository;
     private final UserRepository userRepository;
+    private final SseNotificationService notificationService;
 
     public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail) {
         ServiceRequest req = requestRepository.findById(id)
@@ -38,7 +41,16 @@ public class WorkflowService {
         if (next == RequestStatus.RESOLVED) {
             req.setResolvedAt(now);
         }
-        return requestRepository.save(req);
+        ServiceRequest saved = requestRepository.save(req);
+        try {
+            notificationService.notify(saved.getRequester().getId(), SseNotificationService.EVENT_TICKET_UPDATED, saved.getId(), saved.getStatus().name());
+            if (saved.getAssignedTo() != null) {
+                notificationService.notify(saved.getAssignedTo().getId(), SseNotificationService.EVENT_TICKET_ASSIGNED, saved.getId(), saved.getStatus().name());
+            }
+        } catch (Exception e) {
+            log.warn("SSE notify failed for request {}: {}", saved.getId(), e.getMessage());
+        }
+        return saved;
     }
 
     void validateTransition(RequestStatus current, RequestStatus next) {
