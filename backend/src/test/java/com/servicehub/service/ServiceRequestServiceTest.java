@@ -8,7 +8,6 @@ import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
-import com.servicehub.dto.StatusTransitionLogResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +38,6 @@ class ServiceRequestServiceTest {
     @Mock private SlaPolicyRepository slaPolicyRepository;
     @Mock private WorkflowService workflowService;
     @Mock private SlaService slaService;
-    @Mock private StatusTransitionLogRepository transitionLogRepository;
 
     @InjectMocks private ServiceRequestService service;
 
@@ -102,7 +100,6 @@ class ServiceRequestServiceTest {
         lenient().when(slaService.computeDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(24));
         lenient().when(slaService.computeResponseDeadline(any(), any())).thenReturn(LocalDateTime.now().plusHours(4));
         lenient().when(workflowService.updateStatus(anyLong(), anyString(), anyString(), any())).thenReturn(openRequest);
-        lenient().when(transitionLogRepository.findByRequestIdOrderByChangedAtAsc(anyLong())).thenReturn(List.of());
     }
 
 

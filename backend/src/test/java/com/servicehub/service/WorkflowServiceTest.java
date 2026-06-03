@@ -2,15 +2,15 @@ package com.servicehub.service;
 
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
+import com.servicehub.model.Comment;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.model.StatusTransitionLog;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Priority;
 import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
-import com.servicehub.repository.StatusTransitionLogRepository;
+import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class WorkflowServiceTest {
 
     @Mock private ServiceRequestRepository requestRepository;
     @Mock private UserRepository userRepository;
-    @Mock private StatusTransitionLogRepository transitionLogRepository;
+    @Mock private CommentRepository commentRepository;
 
     @InjectMocks private WorkflowService workflowService;
 
@@ -138,19 +138,29 @@ class WorkflowServiceTest {
     }
 
     @Test
-    void updateStatus_withComment_persistsTransitionLog() {
+    void updateStatus_withNonBlankComment_persistsSystemComment() {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
         when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(transitionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", "Assigned to John — on it");
 
-        verify(transitionLogRepository).save(argThat((StatusTransitionLog log) ->
-                "Assigned to John — on it".equals(log.getComment())
-                && log.getFromStatus() == RequestStatus.OPEN
-                && log.getToStatus() == RequestStatus.ASSIGNED
-                && log.getChangedBy().equals(agent)));
+        verify(commentRepository).save(argThat((Comment c) ->
+                c.getBody().contains("Assigned to John — on it")
+                && c.isSystemGenerated()
+                && c.getAuthor().equals(agent)));
+    }
+
+    @Test
+    void updateStatus_withBlankComment_doesNotPersistComment() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
+
+        verify(commentRepository, never()).save(any());
     }
 
     // -----------------------------------------------------------------------

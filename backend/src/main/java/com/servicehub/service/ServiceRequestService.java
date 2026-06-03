@@ -11,7 +11,6 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +21,6 @@ public class ServiceRequestService {
     private final SlaPolicyRepository slaPolicyRepository;
     private final WorkflowService workflowService;
     private final SlaService slaService;
-    private final StatusTransitionLogRepository transitionLogRepository;
 
     public Page<ServiceRequestResponse> getAllRequests(int page, int size) {
         return requestRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
@@ -123,18 +121,6 @@ public class ServiceRequestService {
         Long resolutionTimeMinutes = req.getResolvedAt() != null && req.getCreatedAt() != null
                 ? ChronoUnit.MINUTES.between(req.getCreatedAt(), req.getResolvedAt()) : null;
 
-        List<StatusTransitionLogResponse> history = req.getId() != null
-                ? transitionLogRepository.findByRequestIdOrderByChangedAtAsc(req.getId()).stream()
-                        .map(t -> StatusTransitionLogResponse.builder()
-                                .fromStatus(t.getFromStatus().name())
-                                .toStatus(t.getToStatus().name())
-                                .changedByName(t.getChangedBy().getFullName())
-                                .comment(t.getComment())
-                                .changedAt(t.getChangedAt())
-                                .build())
-                        .toList()
-                : List.of();
-
         return ServiceRequestResponse.builder()
                 .id(req.getId())
                 .title(req.getTitle())
@@ -157,7 +143,6 @@ public class ServiceRequestService {
                 .responseTimeMinutes(responseTimeMinutes)
                 .resolutionTimeMinutes(resolutionTimeMinutes)
                 .slaBreached(req.isSlaBreached())
-                .transitionHistory(history)
                 .build();
     }
 }

@@ -2,7 +2,6 @@ package com.servicehub.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class ServiceRequestResponse {
@@ -27,5 +26,4 @@ public class ServiceRequestResponse {
     private Long responseTimeMinutes;
     private Long resolutionTimeMinutes;
     private Boolean slaBreached;
-    private List<StatusTransitionLogResponse> transitionHistory;
 }

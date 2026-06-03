@@ -2,12 +2,12 @@ package com.servicehub.service;
 
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
+import com.servicehub.model.Comment;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.model.StatusTransitionLog;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
-import com.servicehub.repository.StatusTransitionLogRepository;
 import com.servicehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class WorkflowService {
 
     private final ServiceRequestRepository requestRepository;
     private final UserRepository userRepository;
-    private final StatusTransitionLogRepository transitionLogRepository;
+    private final CommentRepository commentRepository;
 
     public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail, String comment) {
         ServiceRequest req = requestRepository.findById(id)
@@ -45,25 +45,26 @@ public class WorkflowService {
 
         ServiceRequest saved = requestRepository.save(req);
 
-        transitionLogRepository.save(StatusTransitionLog.builder()
-                .request(saved)
-                .fromStatus(previous)
-                .toStatus(next)
-                .changedBy(agent)
-                .comment(comment)
-                .changedAt(now)
-                .build());
+        if (comment != null && !comment.isBlank()) {
+            commentRepository.save(Comment.builder()
+                    .request(saved)
+                    .author(agent)
+                    .body("[" + previous + " → " + next + "] " + comment)
+                    .systemGenerated(true)
+                    .createdAt(now)
+                    .build());
+        }
 
         return saved;
     }
 
     void validateTransition(RequestStatus current, RequestStatus next) {
         boolean valid = switch (current) {
-            case OPEN       -> next == RequestStatus.ASSIGNED;
-            case ASSIGNED   -> next == RequestStatus.IN_PROGRESS;
+            case OPEN        -> next == RequestStatus.ASSIGNED;
+            case ASSIGNED    -> next == RequestStatus.IN_PROGRESS;
             case IN_PROGRESS -> next == RequestStatus.RESOLVED;
-            case RESOLVED   -> next == RequestStatus.CLOSED;
-            case CLOSED     -> false;
+            case RESOLVED    -> next == RequestStatus.CLOSED;
+            case CLOSED      -> false;
         };
         if (!valid)
             throw new InvalidStatusTransitionException("Invalid status transition: " + current + " -> " + next);

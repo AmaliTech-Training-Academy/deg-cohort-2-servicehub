@@ -29,7 +29,6 @@ class WorkflowSlaServiceTest {
     @Mock SlaPolicyRepository slaPolicyRepository;
     @Mock WorkflowService workflowService;
     @Mock SlaService slaService;
-    @Mock StatusTransitionLogRepository transitionLogRepository;
 
     @InjectMocks ServiceRequestService service;
 
@@ -47,7 +46,6 @@ class WorkflowSlaServiceTest {
         highPolicy = SlaPolicy.builder().id(1L).priority(Priority.HIGH)
                 .responseTimeHours(1).resolutionTimeHours(4).build();
         itDept    = Department.builder().id(1L).name("IT Support").category(RequestCategory.IT_SUPPORT).build();
-        lenient().when(transitionLogRepository.findByRequestIdOrderByChangedAtAsc(anyLong())).thenReturn(List.of());
     }
 
     // ─── Status Workflow ────────────────────────────────────────────────────
