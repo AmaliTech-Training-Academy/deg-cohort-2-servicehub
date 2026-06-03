@@ -1,0 +1,13 @@
+# Deploy to DEV — disabled until the dev server is provisioned.
+# To enable: uncomment the trigger and job below, and add
+# DEV_SERVER_HOST, DEV_SERVER_USER, DEV_SERVER_SSH_KEY as repository secrets.
+
+on:
+  workflow_dispatch: # manual trigger only until fully configured
+
+jobs:
+  placeholder:
+    name: Deploy to DEV (not configured)
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dev deployment is not configured yet."

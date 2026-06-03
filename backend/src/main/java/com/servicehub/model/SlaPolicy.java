@@ -1,10 +1,14 @@
 package com.servicehub.model;
 
 import com.servicehub.model.enums.Priority;
+import com.servicehub.model.enums.RequestCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity @Table(name = "sla_policies")
+@Entity
+@Table(name = "sla_policies", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"category", "priority"})
+})
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class SlaPolicy {
 
@@ -12,7 +16,11 @@ public class SlaPolicy {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true)
+    private RequestCategory category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Priority priority;
 
     @Column(nullable = false)

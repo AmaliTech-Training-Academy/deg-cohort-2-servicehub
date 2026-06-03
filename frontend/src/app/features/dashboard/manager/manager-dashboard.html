@@ -1,0 +1,136 @@
+@if (loading()) {
+  <p class="note" style="padding:40px 0">Loading dashboard…</p>
+} @else if (error()) {
+  <div class="form-err">{{ error() }}</div>
+} @else {
+
+  <!-- ── Stat cards ── -->
+  <div class="stat-grid">
+    <div class="card stat">
+      <div class="stat-k">Total requests</div>
+      <div class="stat-v">{{ stats().totalRequests }}</div>
+      <div class="stat-d">all time</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-k">Active tickets</div>
+      <div class="stat-v">{{ stats().openRequests }}</div>
+      <div class="stat-d">in the queue now</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-k">Resolved</div>
+      <div class="stat-v">{{ stats().resolvedRequests }}</div>
+      <div class="stat-d">completed tickets</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-k">SLA compliance</div>
+      <div class="stat-v" [style.color]="complianceColor()">{{ compliancePct() }}%</div>
+      <div class="stat-d" [class.up]="compliancePct() >= 80" [class.down]="compliancePct() < 80">
+        {{ compliancePct() >= 80 ? 'healthy' : 'needs attention' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 1: Volume by category + SLA donut ── -->
+  <div class="dash-row">
+    <div class="card panel">
+      <div class="section-h">Volume by category</div>
+      @for (cat of ['IT_SUPPORT','FACILITIES','HR_REQUEST']; track cat) {
+        <div class="bar-row">
+          <div class="lab">{{ CAT_LABEL[cat] }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width]="catWidth(cat)" [style.background]="CAT_COLOR[cat]"></div>
+          </div>
+          <div class="num">{{ catCount(cat) }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="card panel donut-panel">
+      <div class="section-h">SLA compliance</div>
+      <svg width="160" height="160" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="54" fill="none" stroke="var(--line)" stroke-width="13" />
+        <circle cx="65" cy="65" r="54" fill="none"
+          [attr.stroke]="complianceColor()" stroke-width="13" stroke-linecap="round"
+          [attr.stroke-dasharray]="donutCirc"
+          [attr.stroke-dashoffset]="donutOffset()"
+          transform="rotate(-90 65 65)"
+          style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)" />
+        <text x="65" y="61" text-anchor="middle"
+          style="font-family:'Bricolage Grotesque';font-size:26px;font-weight:700;fill:var(--txt)">{{ compliancePct() }}%</text>
+        <text x="65" y="80" text-anchor="middle" style="font-size:9px;fill:var(--txt-faint)">on target</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Row 2: 7-day trend + Tickets by status ── -->
+  <div class="dash-row">
+    <div class="card panel">
+      <div class="section-h">Request volume · last 7 days</div>
+      @if (trendDays().length === 0) {
+        <p class="note">No trend data available.</p>
+      } @else {
+        @for (day of trendDays(); track day.label) {
+          <div class="bar-row">
+            <div class="lab" style="width:64px;font-size:12px">{{ day.label }}</div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="trendWidth(day.count)" style="background:var(--accent)"></div>
+            </div>
+            <div class="num">{{ day.count }}</div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="card panel">
+      <div class="section-h">Tickets by status</div>
+      @for (s of ['OPEN','ASSIGNED','IN_PROGRESS','RESOLVED','CLOSED']; track s) {
+        <div class="bar-row">
+          <div class="lab" style="font-size:12px">{{ STATUS_LABEL[s] }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width]="statusWidth(s)" [style.background]="STATUS_COLOR[s]"></div>
+          </div>
+          <div class="num">{{ statusCount(s) }}</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ── Row 3: SLA by category + Resolution performance ── -->
+  <div class="dash-row">
+    <div class="card panel">
+      <div class="section-h">SLA compliance by category</div>
+      @for (cat of ['IT_SUPPORT','FACILITIES','HR_REQUEST']; track cat) {
+        <div class="bar-row">
+          <div class="lab">{{ CAT_LABEL[cat] }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width]="slaCatPct(cat) + '%'" [style.background]="slaCatColor(cat)"></div>
+          </div>
+          <div class="num" style="width:44px">{{ slaCatPct(cat) }}%</div>
+        </div>
+      }
+    </div>
+
+    <div class="card panel">
+      <div class="section-h">Resolution performance</div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding-top:4px">
+        <div>
+          <div class="stat-k">Avg resolution time</div>
+          <div class="stat-v" style="font-size:24px;margin-top:6px">{{ avgDisplay() }}</div>
+          <div class="stat-d">across all resolved tickets</div>
+        </div>
+        <div>
+          <div class="stat-k">Priority breakdown</div>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            @for (p of ['CRITICAL','HIGH','MEDIUM','LOW']; track p) {
+              <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                <span class="chip p-{{ p }}">{{ p }}</span>
+                <span class="mono" style="color:var(--txt-soft)">{{ prioCount(p) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+}
