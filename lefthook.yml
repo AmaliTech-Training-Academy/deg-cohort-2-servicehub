@@ -1,0 +1,21 @@
+pre-push:
+  commands:
+    # Uncomment when ESLint is configured in the frontend
+    # frontend-lint:
+    #   glob: "frontend/**"
+    #   root: "frontend/"
+    #   run: npm run lint
+
+    frontend-tests:
+      glob: "frontend/**"
+      root: "frontend/"
+      env:
+        NG_CLI_ANALYTICS: "false"
+      run: npx ng test --watch=false
+
+    backend-tests:
+      glob: "backend/**"
+      root: "backend/"
+      # Runs unit tests only (*Test.java). Integration tests (*IT.java) are
+      # skipped here — they run in CI where a database is available.
+      run: mvn test -q -Dexclude="**/*IT.java,**/*IntegrationTest.java"
