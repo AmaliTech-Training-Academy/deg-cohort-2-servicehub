@@ -1,7 +1,7 @@
 @if (selectedRequest()) {
   <app-ticket-detail
     [request]="selectedRequest()!"
-    [readonly]="true"
+    [viewOnly]="true"
     (back)="closeDetail()" />
 } @else if (loading()) {
   <p class="note" style="padding:40px 0">Loading your requests…</p>

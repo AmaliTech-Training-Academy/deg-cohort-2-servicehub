@@ -30,11 +30,11 @@ export class SubmitRequestComponent {
     { value: 'HR_REQUEST', label: 'HR Request',  dept: 'HR' },
   ];
 
-  readonly PRIORITIES: { value: string; respondH: number; resolveH: number }[] = [
-    { value: 'LOW',      respondH: 8,  resolveH: 48 },
-    { value: 'MEDIUM',   respondH: 4,  resolveH: 24 },
-    { value: 'HIGH',     respondH: 2,  resolveH: 8  },
-    { value: 'CRITICAL', respondH: 1,  resolveH: 4  },
+  readonly PRIORITIES: { value: string; label: string; respondH: number; resolveH: number }[] = [
+    { value: 'LOW',      label: 'Low',      respondH: 8,  resolveH: 48 },
+    { value: 'MEDIUM',   label: 'Medium',   respondH: 4,  resolveH: 24 },
+    { value: 'HIGH',     label: 'High',     respondH: 2,  resolveH: 8  },
+    { value: 'CRITICAL', label: 'Critical', respondH: 1,  resolveH: 4  },
   ];
 
   get selectedCategory() {

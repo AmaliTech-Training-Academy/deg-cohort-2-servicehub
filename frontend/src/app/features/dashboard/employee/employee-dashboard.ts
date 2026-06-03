@@ -5,7 +5,7 @@ import { DashboardService, ServiceRequestResponse } from '../../../core/services
 import { PriorityChipComponent } from '../../../shared/components/priority-chip/priority-chip';
 import { StatusDotComponent } from '../../../shared/components/status-dot/status-dot';
 import { SlaTagComponent } from '../../../shared/components/sla-tag/sla-tag';
-import { TicketDetailComponent } from '../../dashboard/agent/ticket-detail/ticket-detail';
+import { TicketDetailComponent } from '../agent/ticket-detail/ticket-detail';
 
 @Component({
   selector: 'app-employee-dashboard',

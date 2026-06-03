@@ -60,7 +60,7 @@
         [class.invalid]="fieldInvalid('priority')">
         <option value="" disabled>Select a priority</option>
         @for (p of PRIORITIES; track p.value) {
-          <option [value]="p.value">{{ p.value }}</option>
+          <option [value]="p.value">{{ p.label }}</option>
         }
       </select>
       @if (selectedPriority) {
