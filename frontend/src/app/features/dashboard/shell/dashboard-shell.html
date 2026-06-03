@@ -33,7 +33,12 @@
   </aside>
 
   <!-- Mobile scrim -->
-  <div class="scrim" [class.show]="navOpen()" (click)="navOpen.set(false)"></div>
+  <div class="scrim" [class.show]="navOpen()"
+    role="button" tabindex="0" aria-label="Close navigation"
+    (click)="navOpen.set(false)"
+    (keydown.enter)="navOpen.set(false)"
+    (keydown.space)="navOpen.set(false)">
+  </div>
 
   <!-- Main area -->
   <div class="main">

@@ -25,7 +25,7 @@
 
     <!-- Category -->
     <div class="form-row">
-      <label>Category <span class="hint">— sets the department</span></label>
+      <p style="font-size:13px;font-weight:700;margin-bottom:8px">Category <span class="hint">— sets the department</span></p>
       <div class="seg">
         @for (cat of CATEGORIES; track cat.value) {
           <button type="button" class="seg-btn" [class.on]="form.get('category')!.value === cat.value"
@@ -43,7 +43,7 @@
 
     <!-- Priority -->
     <div class="form-row">
-      <label>Priority <span class="hint">— sets the SLA deadlines</span></label>
+      <p style="font-size:13px;font-weight:700;margin-bottom:8px">Priority <span class="hint">— sets the SLA deadlines</span></p>
       <div class="seg">
         @for (p of PRIORITIES; track p.value) {
           <button type="button" class="seg-btn" [class.on]="form.get('priority')!.value === p.value"
