@@ -63,6 +63,10 @@ public class ServiceRequest {
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
 
+    @Builder.Default
+    @Column(name = "sla_breached", nullable = false)
+    private boolean slaBreached = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
