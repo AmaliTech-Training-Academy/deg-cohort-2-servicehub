@@ -12,4 +12,6 @@ public class DashboardStatsResponse {
     private Double slaComplianceRate;
     private Map<String, Long> requestsByCategory;
     private Map<String, Long> requestsByPriority;
+    private Map<String, Long> requestsByStatus;
+    private Map<String, Double> slaByCategory;
 }
