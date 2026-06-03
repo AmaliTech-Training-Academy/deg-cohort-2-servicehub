@@ -1,4 +1,5 @@
 """ETL Pipeline for ServiceHub - SLA Analytics & Resolution Metrics"""
+import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 from config import DATABASE_URL
@@ -134,9 +135,33 @@ def transform_agent_performance(requests_df):
     return result
 
 
+def transform_department_workload(requests_df):
+    """Department request volumes by status and ISO week.
+
+    Returns one row per (department_name, status, week) combination.
+    week is the ISO year-week string (e.g. '2026-W22') derived from created_at.
+    Provides both a current status snapshot and a historical weekly trend.
+    """
+    if requests_df.empty:
+        return pd.DataFrame()
+
+    df = requests_df.copy()
+    df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
+    df["week"] = df["created_at"].dt.strftime("%G-W%V")
+
+    result = (
+        df.groupby(["department_name", "status", "week"])
+        .size()
+        .reset_index(name="request_count")
+    )
+    return result
+
+
 def load_analytics(df, table_name):
     df.to_sql(table_name, engine, if_exists="replace", index=False)
-    print(f"Loaded {len(df)} rows into {table_name}")
+    os.makedirs("output", exist_ok=True)
+    df.to_csv(f"output/{table_name}.csv", index=False)
+    print(f"Loaded {len(df)} rows into {table_name} (CSV: output/{table_name}.csv)")
 
 def run_pipeline():
     print("Starting ServiceHub ETL pipeline...")
@@ -160,7 +185,10 @@ def run_pipeline():
     if not agent_perf.empty:
         load_analytics(agent_perf, "analytics_agent_performance")
 
-    # TODO: Add department workload analysis
+    dept_workload = transform_department_workload(requests_df)
+    if not dept_workload.empty:
+        load_analytics(dept_workload, "analytics_department_workload")
+
     print("ETL pipeline complete!")
 
 if __name__ == "__main__":
