@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -45,5 +46,14 @@ public class DashboardController {
     public ResponseEntity<Map<String, Long>> getTrends(
             @RequestParam(defaultValue = "7") int days) {
         return ResponseEntity.ok(dashboardService.getDailyVolumeTrend(days));
+    }
+
+    @GetMapping("/agents")
+    @PreAuthorize("hasRole('MANAGER')")
+    @Operation(summary = "Performance stats per agent")
+    @ApiResponse(responseCode = "200", description = "Agent stats returned")
+    @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    public ResponseEntity<List<Map<String, Object>>> getAgentStats() {
+        return ResponseEntity.ok(dashboardService.getAgentStats());
     }
 }
