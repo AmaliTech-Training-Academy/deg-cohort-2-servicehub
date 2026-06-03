@@ -1,7 +1,6 @@
 package com.servicehub.service;
 
 import com.servicehub.dto.*;
-import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.model.*;
@@ -11,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +19,8 @@ public class ServiceRequestService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final SlaPolicyRepository slaPolicyRepository;
+    private final WorkflowService workflowService;
+    private final SlaService slaService;
 
     public Page<ServiceRequestResponse> getAllRequests(int page, int size) {
         return requestRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
@@ -32,9 +34,15 @@ public class ServiceRequestService {
                 .map(this::toResponse);
     }
 
-    public ServiceRequestResponse getRequestById(Long id) {
-        return toResponse(requestRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Request not found")));
+    public ServiceRequestResponse getRequestById(Long id, String email) {
+        ServiceRequest req = requestRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Request not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (user.getRole() == Role.EMPLOYEE && !req.getRequester().getId().equals(user.getId())) {
+            throw new ForbiddenException("Access denied: you can only view your own requests");
+        }
+        return toResponse(req);
     }
 
     public ServiceRequestResponse createRequest(ServiceRequestDto dto, String requesterEmail) {
@@ -47,9 +55,8 @@ public class ServiceRequestService {
         Department department = departmentRepository.findByCategory(category).orElse(null);
 
         LocalDateTime now = LocalDateTime.now();
-        SlaPolicy policy = slaPolicyRepository.findByCategoryAndPriority(category, priority).orElse(null);
-        LocalDateTime resolutionDeadline = policy != null ? now.plusHours(policy.getResolutionTimeHours()) : now.plusHours(24);
-        LocalDateTime responseDeadline   = policy != null ? now.plusHours(policy.getResponseTimeHours())  : now.plusHours(4);
+        LocalDateTime resolutionDeadline = slaService.computeDeadline(category, priority);
+        LocalDateTime responseDeadline   = slaService.computeResponseDeadline(category, priority);
 
         ServiceRequest req = ServiceRequest.builder()
                 .title(dto.getTitle())
@@ -77,12 +84,8 @@ public class ServiceRequestService {
         if (!req.getRequester().getId().equals(user.getId()) && user.getRole() != Role.MANAGER) {
             throw new ForbiddenException("Not authorized to update this request");
         }
-        if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
-            req.setTitle(dto.getTitle());
-        }
-        if (dto.getDescription() != null) {
-            req.setDescription(dto.getDescription());
-        }
+        if (dto.getTitle() != null && !dto.getTitle().isBlank()) req.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) req.setDescription(dto.getDescription());
         if (dto.getCategory() != null) {
             RequestCategory category = RequestCategory.valueOf(dto.getCategory());
             req.setCategory(category);
@@ -103,46 +106,27 @@ public class ServiceRequestService {
     }
 
     public ServiceRequestResponse updateStatus(Long id, StatusUpdateRequest update, String agentEmail) {
-        ServiceRequest req = requestRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Request not found"));
-        User agent = userRepository.findByEmail(agentEmail)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        RequestStatus newStatus = RequestStatus.valueOf(update.getNewStatus());
-        validateStatusTransition(req.getStatus(), newStatus);
-
-        LocalDateTime now = LocalDateTime.now();
-        req.setStatus(newStatus);
-        req.setAssignedTo(agent);
-        req.setUpdatedAt(now);
-        if (newStatus == RequestStatus.ASSIGNED && req.getFirstResponseAt() == null) {
-            req.setFirstResponseAt(now);
-        }
-        if (newStatus == RequestStatus.RESOLVED) {
-            req.setResolvedAt(now);
-        }
-        return toResponse(requestRepository.save(req));
+        return toResponse(workflowService.updateStatus(id, update.getNewStatus(), agentEmail));
     }
 
-    private void validateStatusTransition(RequestStatus current, RequestStatus next) {
-        boolean valid = switch (current) {
-            case OPEN -> next == RequestStatus.ASSIGNED;
-            case ASSIGNED -> next == RequestStatus.IN_PROGRESS;
-            case IN_PROGRESS -> next == RequestStatus.RESOLVED;
-            case RESOLVED -> next == RequestStatus.CLOSED;
-            case CLOSED -> false;
-        };
-        if (!valid) {
-            throw new BadRequestException("Invalid status transition: " + current + " -> " + next);
-        }
-    }
-
-    private ServiceRequestResponse toResponse(ServiceRequest req) {
+    public ServiceRequestResponse toResponse(ServiceRequest req) {
         LocalDateTime now = LocalDateTime.now();
         boolean active = req.getStatus() != RequestStatus.RESOLVED && req.getStatus() != RequestStatus.CLOSED;
         boolean overdue         = active && req.getSlaDeadline() != null      && now.isAfter(req.getSlaDeadline());
         boolean responseOverdue = active && req.getResponseDeadline() != null && req.getFirstResponseAt() == null
                                   && now.isAfter(req.getResponseDeadline());
+
+        String slaStatus;
+        if (!active)              slaStatus = "COMPLETED";
+        else if (overdue)         slaStatus = "RESOLUTION_BREACHED";
+        else if (responseOverdue) slaStatus = "RESPONSE_BREACHED";
+        else                      slaStatus = "ON_TRACK";
+
+        Long responseTimeMinutes = req.getFirstResponseAt() != null && req.getCreatedAt() != null
+                ? ChronoUnit.MINUTES.between(req.getCreatedAt(), req.getFirstResponseAt()) : null;
+        Long resolutionTimeMinutes = req.getResolvedAt() != null && req.getCreatedAt() != null
+                ? ChronoUnit.MINUTES.between(req.getCreatedAt(), req.getResolvedAt()) : null;
+
         return ServiceRequestResponse.builder()
                 .id(req.getId())
                 .title(req.getTitle())
@@ -161,6 +145,10 @@ public class ServiceRequestService {
                 .resolvedAt(req.getResolvedAt())
                 .isOverdue(overdue)
                 .isResponseOverdue(responseOverdue)
+                .slaStatus(slaStatus)
+                .responseTimeMinutes(responseTimeMinutes)
+                .resolutionTimeMinutes(resolutionTimeMinutes)
+                .slaBreached(req.isSlaBreached())
                 .build();
     }
 }

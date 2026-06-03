@@ -1,0 +1,12 @@
+{
+  "name": "servicehub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "is-ci || lefthook install"
+  },
+  "devDependencies": {
+    "is-ci": "^3.0.1",
+    "lefthook": "^1.11.0"
+  }
+}

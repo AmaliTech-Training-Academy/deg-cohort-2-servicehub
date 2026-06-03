@@ -9,7 +9,9 @@ def extract_requests():
     query = text("""
         SELECT sr.id, sr.title, sr.category, sr.priority, sr.status,
                sr.created_at, sr.updated_at, sr.resolved_at,
-               u.name AS requester_name, d.name AS department_name
+               sr.sla_deadline, sr.response_deadline, sr.first_response_at,
+               sr.assigned_to_id,
+               u.full_name AS requester_name, d.name AS department_name
         FROM service_requests sr
         JOIN users u ON sr.requester_id = u.id
         LEFT JOIN departments d ON sr.department_id = d.id

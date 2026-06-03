@@ -1,12 +1,14 @@
 package com.servicehub.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servicehub.config.CorsConfig;
 import com.servicehub.config.SecurityConfig;
 import com.servicehub.dto.*;
 import com.servicehub.exception.BadRequestException;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.service.ServiceRequestService;
+import com.servicehub.service.SlaService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ServiceRequestController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class ServiceRequestControllerTest {
 
@@ -41,6 +43,7 @@ class ServiceRequestControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @MockBean  private ServiceRequestService requestService;
+    @MockBean  private SlaService slaService;
 
 
     private String token(String email, String role) {
@@ -79,12 +82,12 @@ class ServiceRequestControllerTest {
 
 
     @Test
-    void getAllRequests_withAuth_returns200AndContent() throws Exception {
+    void getAllRequests_asAgent_returns200AndContent() throws Exception {
         Page<ServiceRequestResponse> page = new PageImpl<>(List.of(sampleResponse()), PageRequest.of(0, 10), 1);
         when(requestService.getAllRequests(0, 10)).thenReturn(page);
 
         mockMvc.perform(get("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + agentToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Fix printer"))
                 .andExpect(jsonPath("$.content[0].status").value("OPEN"))
@@ -98,11 +101,18 @@ class ServiceRequestControllerTest {
     }
 
     @Test
+    void getAllRequests_asEmployee_returns403() throws Exception {
+        mockMvc.perform(get("/api/requests")
+                        .header("Authorization", "Bearer " + employeeToken()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getAllRequests_customPageParams_delegatesToService() throws Exception {
         when(requestService.getAllRequests(2, 5)).thenReturn(new PageImpl<>(List.of(), PageRequest.of(2, 5), 0));
 
         mockMvc.perform(get("/api/requests?page=2&size=5")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + agentToken()))
                 .andExpect(status().isOk());
 
         verify(requestService).getAllRequests(2, 5);
@@ -141,7 +151,7 @@ class ServiceRequestControllerTest {
 
     @Test
     void getById_existingRequest_returns200WithDetails() throws Exception {
-        when(requestService.getRequestById(1L)).thenReturn(sampleResponse());
+        when(requestService.getRequestById(eq(1L), eq("employee@test.com"))).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/requests/1")
                         .header("Authorization", "Bearer " + employeeToken()))
@@ -153,7 +163,8 @@ class ServiceRequestControllerTest {
 
     @Test
     void getById_nonExistentRequest_returns404WithErrorMessage() throws Exception {
-        when(requestService.getRequestById(99L)).thenThrow(new NotFoundException("Request not found"));
+        when(requestService.getRequestById(eq(99L), eq("employee@test.com")))
+                .thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(get("/api/requests/99")
                         .header("Authorization", "Bearer " + employeeToken()))
@@ -165,6 +176,17 @@ class ServiceRequestControllerTest {
     void getById_withoutAuth_returns401() throws Exception {
         mockMvc.perform(get("/api/requests/1"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getById_employeeAccessingOthersRequest_returns403() throws Exception {
+        when(requestService.getRequestById(eq(1L), eq("employee@test.com")))
+                .thenThrow(new ForbiddenException("Access denied: you can only view your own requests"));
+
+        mockMvc.perform(get("/api/requests/1")
+                        .header("Authorization", "Bearer " + employeeToken()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Access denied: you can only view your own requests"));
     }
 
 
@@ -249,6 +271,7 @@ class ServiceRequestControllerTest {
     void createRequest_facilitiesCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Fix AC");
+        dto.setDescription("AC unit not working in room 201");
         dto.setCategory("FACILITIES");
         dto.setPriority("LOW");
 
@@ -273,6 +296,7 @@ class ServiceRequestControllerTest {
     void createRequest_hrCategory_createsSuccessfully() throws Exception {
         ServiceRequestDto dto = new ServiceRequestDto();
         dto.setTitle("Leave request");
+        dto.setDescription("Requesting annual leave approval for next week");
         dto.setCategory("HR_REQUEST");
         dto.setPriority("MEDIUM");
 
@@ -386,6 +410,15 @@ class ServiceRequestControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"newStatus\":\"ASSIGNED\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateStatus_asEmployee_returns403() throws Exception {
+        mockMvc.perform(put("/api/requests/1/status")
+                        .header("Authorization", "Bearer " + employeeToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newStatus\":\"ASSIGNED\"}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

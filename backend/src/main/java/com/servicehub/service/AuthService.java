@@ -1,20 +1,15 @@
 package com.servicehub.service;
 
+import com.servicehub.config.JwtService;
 import com.servicehub.dto.*;
 import com.servicehub.exception.EmailAlreadyExistsException;
+import com.servicehub.exception.UnauthorizedException;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.UserRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -22,12 +17,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${jwt.expiration}")
-    private Long jwtExpiration;
+    private final JwtService jwtService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -41,7 +31,7 @@ public class AuthService {
                 .department(request.getDepartment())
                 .build();
         userRepository.save(user);
-        String token = generateToken(user.getEmail(), user.getRole().name());
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
@@ -52,27 +42,16 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new UnauthorizedException("Invalid credentials");
         }
-        String token = generateToken(user.getEmail(), user.getRole().name());
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .fullName(user.getFullName())
                 .build();
-    }
-
-    private String generateToken(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder()
-                .subject(email)
-                .claim("role", role)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(key)
-                .compact();
     }
 }
