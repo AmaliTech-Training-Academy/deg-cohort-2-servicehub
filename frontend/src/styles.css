@@ -65,6 +65,7 @@ h1, h2, h3, .display { font-family: 'Bricolage Grotesque', sans-serif; letter-sp
   background-repeat: no-repeat; background-position: right 12px center;
 }
 .field-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background-color: #fff; }
+.field-select.invalid { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .field .err { color: var(--red); font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 4px; }
 .enter {
   width: 100%; margin-top: 18px; padding: 13px; border-radius: 11px; background: var(--ink); color: #fff;

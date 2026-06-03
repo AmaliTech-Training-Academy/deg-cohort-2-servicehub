@@ -3,10 +3,10 @@
     <h3 class="card-h">Submit a service request</h3>
     <p class="card-sub">Tell us what you need — we'll route it to the right team automatically.</p>
 
-    @if (error) {
+    @if (error()) {
       <div class="form-err" style="margin-bottom:18px">
         <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
-        {{ error }}
+        {{ error() }}
       </div>
     }
 
@@ -72,8 +72,8 @@
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn btn-primary" [disabled]="loading" (click)="submit()">
-        {{ loading ? 'Submitting…' : 'Submit request' }}
+      <button type="button" class="btn btn-primary" [disabled]="loading()" (click)="submit()">
+        {{ loading() ? 'Submitting…' : 'Submit request' }}
         <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
