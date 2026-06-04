@@ -28,6 +28,7 @@ jobs:
             export DB_NAME=${{ secrets.DEV_DB_NAME }}
             export DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
+            export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
 
             docker compose -f docker-compose.yml \
                            -f docker-compose.aws.yml \
@@ -39,6 +40,7 @@ jobs:
             if ! curl -sf http://localhost:8080/actuator/health; then
               echo "Health check failed — rolling back to $ROLLBACK_SHA"
               git checkout $ROLLBACK_SHA
+              export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
               docker compose -f docker-compose.yml \
                              -f docker-compose.aws.yml \
                              up -d --build
