@@ -1,3 +1,11 @@
+<!-- SSE toast notification -->
+<div class="flash" [class.show]="toastMessage()">
+  <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+    style="color:#7FE0BF"><path d="M20 6 9 17l-5-5"/></svg>
+  {{ toastMessage() }}
+</div>
+
 @if (selectedRequest()) {
   <app-ticket-detail
     [request]="selectedRequest()!"

@@ -1,6 +1,10 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService, ServiceRequestResponse } from '../../../core/services/dashboard.service';
+import { SseService, SseEvent } from '../../../core/services/sse.service';
 import { PriorityChipComponent } from '../../../shared/components/priority-chip/priority-chip';
 import { StatusDotComponent } from '../../../shared/components/status-dot/status-dot';
 import { SlaTagComponent } from '../../../shared/components/sla-tag/sla-tag';
@@ -11,14 +15,17 @@ import { TicketDetailComponent } from './ticket-detail/ticket-detail';
   imports: [FormsModule, PriorityChipComponent, StatusDotComponent, SlaTagComponent, TicketDetailComponent],
   templateUrl: './agent-dashboard.html',
 })
-export class AgentDashboard implements OnInit {
+export class AgentDashboard implements OnInit, OnDestroy {
   private dashboardService = inject(DashboardService);
+  private authService = inject(AuthService);
+  private sseService = inject(SseService);
 
   readonly loading = signal(true);
   readonly error = signal('');
   readonly requests = signal<ServiceRequestResponse[]>([]);
   readonly advancing = signal(new Set<number>());
   readonly selectedRequest = signal<ServiceRequestResponse | null>(null);
+  readonly toastMessage = signal('');
 
   readonly q = signal('');
   readonly statusFilter = signal('ALL');
@@ -38,6 +45,7 @@ export class AgentDashboard implements OnInit {
     FACILITIES: 'M14.5 6.5a3.5 3.5 0 0 0-4.6 4.3L4 16.7 7.3 20l5.9-5.9a3.5 3.5 0 0 0 4.3-4.6l-2.3 2.3-2-2 2.3-2.3Z',
     HR_REQUEST: 'M4 13v-1a8 8 0 0 1 16 0v1M4 13h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5ZM20 13h-2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-5ZM18 19a3 3 0 0 1-3 3h-3',
   };
+
   readonly filtered = computed(() => {
     const q = this.q().trim().toLowerCase();
     return this.requests().filter(r => {
@@ -55,7 +63,69 @@ export class AgentDashboard implements OnInit {
     !!this.q().trim() || this.statusFilter() !== 'ALL' || this.prioFilter() !== 'ALL'
   );
 
-  ngOnInit(): void { this.load(); }
+  private sseSubscription?: Subscription;
+  private toastTimer?: ReturnType<typeof setTimeout>;
+
+  ngOnInit(): void {
+    this.load();
+    this.connectToStream();
+  }
+
+  ngOnDestroy(): void {
+    this.sseSubscription?.unsubscribe();
+    clearTimeout(this.toastTimer);
+  }
+
+  private load(): void {
+    this.loading.set(true);
+    this.dashboardService.getRequests(0, 20).subscribe({
+      next: p => { this.requests.set(p.content); this.loading.set(false); },
+      error: () => { this.error.set('Failed to load tickets.'); this.loading.set(false); },
+    });
+  }
+
+  private refresh(): void {
+    this.dashboardService.getRequests(0, 20).subscribe({
+      next: p => this.requests.set(p.content),
+      error: () => { /* silent — existing list stays visible on refresh failure */ },
+    });
+  }
+
+  private connectToStream(): void {
+    const token = this.authService.getToken();
+    if (!token) return;
+
+    const url = `${environment.apiUrl}/api/notifications/stream?token=${token}`;
+
+    this.sseSubscription = this.sseService.stream<SseEvent>(url).subscribe({
+      next: event => {
+        if (event.type === 'TICKET_UPDATED' || event.type === 'TICKET_ASSIGNED') {
+          this.refresh();
+          this.showToast(`Ticket #SH-${event.requestId} updated to ${this.formatStatus(event.detail)}`);
+        }
+        if (event.type === 'SLA_BREACHED') {
+          this.refresh();
+          this.showToast(`Ticket #SH-${event.requestId} SLA breached — priority escalated`);
+        }
+      },
+      error: () => { /* SSE errors are handled by EventSource auto-reconnect */ },
+    });
+  }
+
+  private formatStatus(status: string | undefined): string {
+    if (!status) return '';
+    const labels: Record<string, string> = {
+      OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress',
+      RESOLVED: 'Resolved', CLOSED: 'Closed',
+    };
+    return labels[status] ?? status;
+  }
+
+  private showToast(message: string): void {
+    this.toastMessage.set(message);
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toastMessage.set(''), 3000);
+  }
 
   openDetail(id: number): void {
     const r = this.requests().find(x => x.id === id);
@@ -67,14 +137,6 @@ export class AgentDashboard implements OnInit {
   onDetailAdvanced(updated: ServiceRequestResponse): void {
     this.requests.update(list => list.map(r => r.id === updated.id ? updated : r));
     this.selectedRequest.set(updated);
-  }
-
-  private load(): void {
-    this.loading.set(true);
-    this.dashboardService.getRequests(0, 20).subscribe({
-      next: p => { this.requests.set(p.content); this.loading.set(false); },
-      error: () => { this.error.set('Failed to load tickets.'); this.loading.set(false); },
-    });
   }
 
   clearFilters(): void { this.q.set(''); this.statusFilter.set('ALL'); this.prioFilter.set('ALL'); }
