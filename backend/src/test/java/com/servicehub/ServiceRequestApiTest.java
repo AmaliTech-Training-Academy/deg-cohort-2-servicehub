@@ -1,146 +1,151 @@
 package com.servicehub;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
+import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.util.Map;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Transactional
 class ServiceRequestApiTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @LocalServerPort int port;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired UserRepository userRepository;
+    @Autowired ServiceRequestRepository requestRepository;
+    @Autowired PasswordEncoder passwordEncoder;
 
     private String managerToken;
 
     @BeforeEach
-    void setup() throws Exception {
-        userRepository.deleteAll();
+    void setUp() {
+        RestAssured.port = port;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+
+        requestRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
 
         userRepository.save(User.builder()
-                .email("manager@amalitech.com")
-                .fullName("System Manager")
-                .password(passwordEncoder.encode("password123"))
-                .role(Role.MANAGER)
-                .build());
-
+                .email("manager@amalitech.com").fullName("System Manager")
+                .password(passwordEncoder.encode("password123")).role(Role.MANAGER).build());
         userRepository.save(User.builder()
-                .email("agent@amalitech.com")
-                .fullName("Support Agent")
-                .password(passwordEncoder.encode("password123"))
-                .role(Role.AGENT)
-                .build());
-
+                .email("agent@amalitech.com").fullName("Support Agent")
+                .password(passwordEncoder.encode("password123")).role(Role.AGENT).build());
         userRepository.save(User.builder()
-                .email("user@amalitech.com")
-                .fullName("Test User")
-                .password(passwordEncoder.encode("password123"))
-                .role(Role.EMPLOYEE)
-                .build());
+                .email("user@amalitech.com").fullName("Test User")
+                .password(passwordEncoder.encode("password123")).role(Role.EMPLOYEE).build());
 
-        managerToken = loginAndGetToken("manager@amalitech.com", "password123");
+        managerToken = loginToken("manager@amalitech.com", "password123");
+    }
+
+    // ── Auth — login contracts ────────────────────────────────────────────────
+
+    @Test
+    void managerLogin_returnsTokenWithManagerRole() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("email", "manager@amalitech.com", "password", "password123"))
+                .post("/api/auth/login")
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue())
+                .body("role", equalTo("MANAGER"))
+                .body("email", equalTo("manager@amalitech.com"));
     }
 
     @Test
-    void managerLogin_returnsToken() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"manager@amalitech.com\",\"password\":\"password123\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.role").value("MANAGER"))
-                .andExpect(jsonPath("$.email").value("manager@amalitech.com"));
+    void agentLogin_returnsTokenWithAgentRole() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("email", "agent@amalitech.com", "password", "password123"))
+                .post("/api/auth/login")
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue())
+                .body("role", equalTo("AGENT"));
     }
 
     @Test
-    void agentLogin_returnsTokenWithAgentRole() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"agent@amalitech.com\",\"password\":\"password123\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.role").value("AGENT"));
+    void employeeLogin_returnsTokenWithEmployeeRole() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("email", "user@amalitech.com", "password", "password123"))
+                .post("/api/auth/login")
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue())
+                .body("role", equalTo("EMPLOYEE"));
+    }
+
+    // ── Auth — register contracts ─────────────────────────────────────────────
+
+    @Test
+    void register_newEmployee_returnsTokenAndEmployeeRole() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", "New Employee", "email", "new@amalitech.com",
+                        "password", "password123", "department", "IT"))
+                .post("/api/auth/register")
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue())
+                .body("role", equalTo("EMPLOYEE"))
+                .body("email", equalTo("new@amalitech.com"));
     }
 
     @Test
-    void employeeLogin_returnsTokenWithEmployeeRole() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"user@amalitech.com\",\"password\":\"password123\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.role").value("EMPLOYEE"));
+    void register_duplicateEmail_returns409() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", "Dup", "email", "manager@amalitech.com",
+                        "password", "password123", "department", "IT"))
+                .post("/api/auth/register")
+                .then()
+                .statusCode(409)
+                .body("error", equalTo("Email already in use"));
+    }
+
+    // ── Auth guard — service requests ─────────────────────────────────────────
+
+    @Test
+    void getRequests_withValidManagerToken_returns200() {
+        given()
+                .header("Authorization", "Bearer " + managerToken)
+                .get("/api/requests")
+                .then()
+                .statusCode(200);
     }
 
     @Test
-    void register_createsEmployeeAndReturnsToken() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"New Employee\",\"email\":\"new@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.role").value("EMPLOYEE"))
-                .andExpect(jsonPath("$.email").value("new@amalitech.com"));
+    void getRequests_withoutToken_returns401() {
+        given()
+                .get("/api/requests")
+                .then()
+                .statusCode(401);
     }
 
-    @Test
-    void register_duplicateEmail_returns409() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Dup\",\"email\":\"manager@amalitech.com\",\"password\":\"password123\",\"department\":\"IT\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Email already in use"));
-    }
+    // ── Helper ────────────────────────────────────────────────────────────────
 
-    @Test
-    void getRequests_withValidManagerToken_returns200() throws Exception {
-        mockMvc.perform(get("/api/requests")
-                        .header("Authorization", "Bearer " + managerToken))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void getRequests_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/requests"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    private String loginAndGetToken(String email, String password) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format("{\"email\":\"%s\",\"password\":\"%s\"}", email, password)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-        return body.get("token").asText();
+    private String loginToken(String email, String password) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("email", email, "password", password))
+                .post("/api/auth/login")
+                .then().statusCode(200)
+                .extract().path("token");
     }
 }
