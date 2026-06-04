@@ -9,8 +9,7 @@ import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.SlaService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.servicehub.support.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,8 +22,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,26 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class ServiceRequestControllerTest {
 
-    private static final String JWT_SECRET = "test-secret-key-for-testing-purposes-only-minimum-32-chars";
-
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @MockBean  private ServiceRequestService requestService;
     @MockBean  private SlaService slaService;
-
-
-    private String token(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder()
-                .subject(email)
-                .claim("role", role)
-                .signWith(key)
-                .compact();
-    }
-
-    private String employeeToken() { return token("employee@test.com", "EMPLOYEE"); }
-    private String agentToken()    { return token("agent@test.com", "AGENT"); }
-    private String managerToken()  { return token("manager@test.com", "MANAGER"); }
 
     private ServiceRequestResponse sampleResponse() {
         return responseWithStatus("OPEN", null);
@@ -87,7 +68,7 @@ class ServiceRequestControllerTest {
         when(requestService.getAllRequests(0, 10)).thenReturn(page);
 
         mockMvc.perform(get("/api/requests")
-                        .header("Authorization", "Bearer " + agentToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Fix printer"))
                 .andExpect(jsonPath("$.content[0].status").value("OPEN"))
@@ -103,7 +84,7 @@ class ServiceRequestControllerTest {
     @Test
     void getAllRequests_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -112,7 +93,7 @@ class ServiceRequestControllerTest {
         when(requestService.getAllRequests(2, 5)).thenReturn(new PageImpl<>(List.of(), PageRequest.of(2, 5), 0));
 
         mockMvc.perform(get("/api/requests?page=2&size=5")
-                        .header("Authorization", "Bearer " + agentToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk());
 
         verify(requestService).getAllRequests(2, 5);
@@ -122,10 +103,10 @@ class ServiceRequestControllerTest {
     @Test
     void getMyRequests_withAuth_returns200() throws Exception {
         Page<ServiceRequestResponse> page = new PageImpl<>(List.of(sampleResponse()), PageRequest.of(0, 10), 1);
-        when(requestService.getMyRequests("employee@test.com", 0, 10)).thenReturn(page);
+        when(requestService.getMyRequests("emp@test.com", 0, 10)).thenReturn(page);
 
         mockMvc.perform(get("/api/requests/my-requests")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].requesterName").value("Test Employee"));
     }
@@ -138,23 +119,23 @@ class ServiceRequestControllerTest {
 
     @Test
     void getMyRequests_passesAuthenticatedEmailToService() throws Exception {
-        when(requestService.getMyRequests(eq("employee@test.com"), anyInt(), anyInt()))
+        when(requestService.getMyRequests(eq("emp@test.com"), anyInt(), anyInt()))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
         mockMvc.perform(get("/api/requests/my-requests")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isOk());
 
-        verify(requestService).getMyRequests(eq("employee@test.com"), anyInt(), anyInt());
+        verify(requestService).getMyRequests(eq("emp@test.com"), anyInt(), anyInt());
     }
 
 
     @Test
     void getById_existingRequest_returns200WithDetails() throws Exception {
-        when(requestService.getRequestById(eq(1L), eq("employee@test.com"))).thenReturn(sampleResponse());
+        when(requestService.getRequestById(eq(1L), eq("emp@test.com"))).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/requests/1")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Fix printer"))
@@ -163,11 +144,11 @@ class ServiceRequestControllerTest {
 
     @Test
     void getById_nonExistentRequest_returns404WithErrorMessage() throws Exception {
-        when(requestService.getRequestById(eq(99L), eq("employee@test.com")))
+        when(requestService.getRequestById(eq(99L), eq("emp@test.com")))
                 .thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(get("/api/requests/99")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Request not found"));
     }
@@ -180,11 +161,11 @@ class ServiceRequestControllerTest {
 
     @Test
     void getById_employeeAccessingOthersRequest_returns403() throws Exception {
-        when(requestService.getRequestById(eq(1L), eq("employee@test.com")))
+        when(requestService.getRequestById(eq(1L), eq("emp@test.com")))
                 .thenThrow(new ForbiddenException("Access denied: you can only view your own requests"));
 
         mockMvc.perform(get("/api/requests/1")
-                        .header("Authorization", "Bearer " + employeeToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Access denied: you can only view your own requests"));
     }
@@ -198,10 +179,10 @@ class ServiceRequestControllerTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("HIGH");
 
-        when(requestService.createRequest(any(), eq("employee@test.com"))).thenReturn(sampleResponse());
+        when(requestService.createRequest(any(), eq("emp@test.com"))).thenReturn(sampleResponse());
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -217,7 +198,7 @@ class ServiceRequestControllerTest {
         dto.setPriority("HIGH");
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -232,7 +213,7 @@ class ServiceRequestControllerTest {
         dto.setPriority("HIGH");
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -247,7 +228,7 @@ class ServiceRequestControllerTest {
         dto.setPriority(null);
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -281,10 +262,10 @@ class ServiceRequestControllerTest {
                 .isOverdue(false).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .slaDeadline(LocalDateTime.now().plusHours(48)).build();
 
-        when(requestService.createRequest(any(), eq("employee@test.com"))).thenReturn(response);
+        when(requestService.createRequest(any(), eq("emp@test.com"))).thenReturn(response);
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -306,10 +287,10 @@ class ServiceRequestControllerTest {
                 .isOverdue(false).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
                 .slaDeadline(LocalDateTime.now().plusHours(24)).build();
 
-        when(requestService.createRequest(any(), eq("employee@test.com"))).thenReturn(response);
+        when(requestService.createRequest(any(), eq("emp@test.com"))).thenReturn(response);
 
         mockMvc.perform(post("/api/requests")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -323,11 +304,11 @@ class ServiceRequestControllerTest {
         UpdateRequestDto dto = new UpdateRequestDto();
         dto.setTitle("Updated title");
 
-        when(requestService.updateRequest(eq(1L), any(), eq("employee@test.com")))
+        when(requestService.updateRequest(eq(1L), any(), eq("emp@test.com")))
                 .thenReturn(sampleResponse());
 
         mockMvc.perform(put("/api/requests/1")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
@@ -342,7 +323,7 @@ class ServiceRequestControllerTest {
                 .thenThrow(new ForbiddenException("Not authorized to update this request"));
 
         mockMvc.perform(put("/api/requests/1")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
@@ -355,7 +336,7 @@ class ServiceRequestControllerTest {
                 .thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(put("/api/requests/99")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound())
@@ -376,11 +357,11 @@ class ServiceRequestControllerTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("ASSIGNED");
 
-        when(requestService.updateStatus(eq(1L), any(), eq("agent@test.com")))
+        when(requestService.updateStatus(eq(1L), any(), eq("agt@test.com")))
                 .thenReturn(responseWithStatus("ASSIGNED", "Test Agent"));
 
         mockMvc.perform(put("/api/requests/1/status")
-                        .header("Authorization", "Bearer " + agentToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
@@ -397,7 +378,7 @@ class ServiceRequestControllerTest {
                 .thenThrow(new BadRequestException("Invalid status transition: OPEN -> IN_PROGRESS"));
 
         mockMvc.perform(put("/api/requests/1/status")
-                        .header("Authorization", "Bearer " + agentToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isBadRequest())
@@ -415,7 +396,7 @@ class ServiceRequestControllerTest {
     @Test
     void updateStatus_asEmployee_returns403() throws Exception {
         mockMvc.perform(put("/api/requests/1/status")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"newStatus\":\"ASSIGNED\"}"))
                 .andExpect(status().isForbidden());
@@ -426,11 +407,11 @@ class ServiceRequestControllerTest {
         StatusUpdateRequest update = new StatusUpdateRequest();
         update.setNewStatus("ASSIGNED");
 
-        when(requestService.updateStatus(eq(1L), any(), eq("manager@test.com")))
+        when(requestService.updateStatus(eq(1L), any(), eq("mgr@test.com")))
                 .thenReturn(responseWithStatus("ASSIGNED", "Test Manager"));
 
         mockMvc.perform(put("/api/requests/1/status")
-                        .header("Authorization", "Bearer " + managerToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())

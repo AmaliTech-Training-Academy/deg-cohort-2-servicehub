@@ -67,7 +67,9 @@ public class SseNotificationService {
                         .id(String.valueOf(eventIdCounter.incrementAndGet()))
                         .name(eventType)
                         .data(json, MediaType.APPLICATION_JSON));
-            } catch (IOException e) {
+            } catch (Exception e) {
+                // Catches both IOException (client disconnect) and IllegalStateException
+                // (emitter already completed — e.g. browser tab closed before callback fired)
                 dead.add(emitter);
             }
         }
