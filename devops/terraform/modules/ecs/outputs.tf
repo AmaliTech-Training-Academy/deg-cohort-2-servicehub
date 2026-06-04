@@ -25,3 +25,7 @@ output "frontend_service_name" {
 output "backend_sg_id" {
   value = aws_security_group.backend.id
 }
+
+output "etl_ecr_url" {
+  value = aws_ecr_repository.etl.repository_url
+}
