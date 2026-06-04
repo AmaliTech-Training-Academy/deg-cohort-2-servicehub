@@ -618,7 +618,8 @@ INSERT INTO service_requests (
     NULL,
     NOW() - INTERVAL '6 hours',
     NOW() - INTERVAL '6 hours',
-    NULL);
+    NULL)
+ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence so new inserts don't collide with seeded IDs
 SELECT setval('service_requests_id_seq', (SELECT MAX(id) FROM service_requests));
