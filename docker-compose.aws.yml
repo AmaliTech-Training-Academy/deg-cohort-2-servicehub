@@ -1,5 +1,5 @@
 # Override for AWS deployments (EC2 dev + ECS prod).
-# Removes the local postgres container and points backend at RDS.
+# Uses pre-built images from ECR — no build on the server.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d
 
 services:
@@ -8,11 +8,28 @@ services:
       - disabled
 
   backend:
+    image: ${BACKEND_IMAGE}
     depends_on:
       db:
         condition: service_healthy
         required: false
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://${RDS_ENDPOINT}:5432/${DB_NAME}
-      - SPRING_DATASOURCE_USERNAME=${DB_USER}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - DB_URL=jdbc:postgresql://${RDS_ENDPOINT}:5432/${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+
+  data-engineering:
+    image: ${ETL_IMAGE}
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    environment:
+      - DB_HOST=${RDS_ENDPOINT}
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}

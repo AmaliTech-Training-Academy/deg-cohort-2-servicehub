@@ -364,3 +364,109 @@ resource "aws_ecs_service" "frontend" {
   depends_on = [aws_lb_listener.http]
   tags       = var.tags
 }
+
+# ── Data Engineering — ECR + Scheduled ECS Task ──────────────────────────────
+resource "aws_ecr_repository" "etl" {
+  name         = "${var.name}-etl"
+  force_delete = true
+  tags         = merge(var.tags, { Name = "${var.name}-etl" })
+}
+
+resource "aws_cloudwatch_log_group" "etl" {
+  name              = "/ecs/${var.name}-etl"
+  retention_in_days = 7
+  tags              = var.tags
+}
+
+resource "aws_ecs_task_definition" "etl" {
+  family                   = "${var.name}-etl"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.execution.arn
+
+  container_definitions = jsonencode([{
+    name      = "etl"
+    image     = "${aws_ecr_repository.etl.repository_url}:prod-latest"
+    essential = true
+
+    environment = [
+      { name = "DB_HOST", value = var.db_address },
+      { name = "DB_PORT", value = "5432" },
+      { name = "DB_NAME", value = var.db_name },
+      { name = "DB_USER", value = var.db_username }
+    ]
+
+    secrets = [
+      { name = "DB_PASSWORD", valueFrom = aws_ssm_parameter.db_password.arn }
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.etl.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+
+  tags = var.tags
+}
+
+# Runs ETL every hour via EventBridge
+resource "aws_cloudwatch_event_rule" "etl" {
+  name                = "${var.name}-etl-schedule"
+  description         = "Trigger ETL pipeline every hour"
+  schedule_expression = "rate(1 hour)"
+  tags                = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "etl" {
+  rule     = aws_cloudwatch_event_rule.etl.name
+  arn      = aws_ecs_cluster.this.arn
+  role_arn = aws_iam_role.etl_events.arn
+
+  ecs_target {
+    task_definition_arn = aws_ecs_task_definition.etl.arn
+    task_count          = 1
+    launch_type         = "FARGATE"
+
+    network_configuration {
+      subnets          = var.public_subnet_ids
+      security_groups  = [aws_security_group.backend.id]
+      assign_public_ip = true
+    }
+  }
+}
+
+resource "aws_iam_role" "etl_events" {
+  name = "${var.name}-etl-events-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "events.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "etl_events" {
+  name = "${var.name}-etl-run-task"
+  role = aws_iam_role.etl_events.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["ecs:RunTask"]
+      Resource = aws_ecs_task_definition.etl.arn
+      }, {
+      Effect   = "Allow"
+      Action   = ["iam:PassRole"]
+      Resource = aws_iam_role.execution.arn
+    }]
+  })
+}

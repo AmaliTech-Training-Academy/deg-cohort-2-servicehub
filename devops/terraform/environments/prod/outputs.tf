@@ -22,3 +22,7 @@ output "ecs_cluster" {
 output "rds_endpoint" {
   value = module.rds.endpoint
 }
+
+output "etl_ecr_url" {
+  value = module.ecs.etl_ecr_url
+}
