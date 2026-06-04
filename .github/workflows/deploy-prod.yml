@@ -1,0 +1,111 @@
+name: Deploy to PRODUCTION
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Promote dev image and deploy to ECS
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── Promote dev-latest → prod-latest (no rebuild) ────────────────────────
+      - name: Promote backend image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_BACKEND_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_BACKEND_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
+      - name: Promote frontend image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_FRONTEND_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_FRONTEND_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
+      - name: Promote ETL image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
+      # ── Deploy promoted image to ECS ─────────────────────────────────────────
+      - name: Update backend task definition
+        id: backend_task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: servicehub-prod-backend
+          container-name: backend
+          image: ${{ secrets.PROD_ECR_BACKEND_URL }}:prod-latest
+
+      - name: Deploy backend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.backend_task.outputs.task-definition }}
+          service: ${{ secrets.PROD_ECS_BACKEND_SERVICE }}
+          cluster: ${{ secrets.PROD_ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Update frontend task definition
+        id: frontend_task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: servicehub-prod-frontend
+          container-name: frontend
+          image: ${{ secrets.PROD_ECR_FRONTEND_URL }}:prod-latest
+
+      - name: Deploy frontend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.frontend_task.outputs.task-definition }}
+          service: ${{ secrets.PROD_ECS_FRONTEND_SERVICE }}
+          cluster: ${{ secrets.PROD_ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Notify on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"CI Alerts <onboarding@resend.dev>\",
+              \"to\": [\"$MAIL_TO\"],
+              \"subject\": \"Deploy to PRODUCTION failed\",
+              \"text\": \"Production deployment to ECS failed.\nCommit: ${{ github.sha }}\nTriggered by: ${{ github.actor }}\nView run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            }"

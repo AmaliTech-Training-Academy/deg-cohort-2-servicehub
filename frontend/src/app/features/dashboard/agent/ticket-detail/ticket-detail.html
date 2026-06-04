@@ -1,0 +1,126 @@
+<button class="btn btn-ghost back-btn" (click)="back.emit()">
+  <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  Back to list
+</button>
+
+<div class="detail-grid">
+  <!-- Main column -->
+  <div class="detail-main">
+
+    <!-- Header -->
+    <div class="card detail-head">
+      <div class="dh-top">
+        <div>
+          <div class="tid mono">{{ ticketId() }}</div>
+          <h3 class="dh-title">{{ request.title }}</h3>
+        </div>
+        <app-priority-chip [priority]="request.priority" />
+      </div>
+
+      @if (request.description) {
+        <p class="dh-desc">{{ request.description }}</p>
+      }
+
+      <div class="dh-meta">
+        <span>
+          <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
+          {{ request.requesterName }}
+        </span>
+        <span>{{ CAT_LABEL[request.category] }}</span>
+        @if (request.departmentName) {
+          <span>
+            <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h6M6 3a2 2 0 1 0-.001-.001M18 21a2 2 0 1 0 .001-.001M18 21l3-3-3-3"/></svg>
+            {{ request.departmentName }} team
+          </span>
+        }
+        @if (request.assignedToName) {
+          <span>assigned to {{ request.assignedToName }}</span>
+        }
+        <span>
+          <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/></svg>
+          opened {{ ago(request.createdAt) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Advance action (agents/managers only) -->
+    @if (viewOnly) {
+      <div class="card detail-act">
+        <p class="note">You'll be notified as the support team updates this request. Only agents can change its status.</p>
+      </div>
+    } @else if (nextStatus) {
+      <div class="card detail-act">
+        <div class="section-h">Move this ticket forward</div>
+
+        <textarea
+          placeholder="Add a note for this status change (optional)…"
+          [ngModel]="comment()" (ngModelChange)="comment.set($event)"
+          style="width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+                 font-size:13.5px;background:var(--paper);resize:vertical;min-height:80px;
+                 line-height:1.5;margin-bottom:14px;display:block"
+          (focus)="$any($event.target).style.borderColor='var(--accent)'"
+          (blur)="$any($event.target).style.borderColor='var(--line)'"
+        ></textarea>
+
+        <div class="act-row">
+          <button class="btn btn-primary" [disabled]="advancing()" (click)="advance()">
+            {{ advancing() ? 'Updating…' : advanceLabel }}
+            <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="note act-note">
+          Current stage <app-status-dot [status]="request.status" /> — moves to <b>{{ STATUS_LABEL[nextStatus] }}</b>
+        </p>
+      </div>
+    } @else {
+      <div class="card detail-act">
+        <p class="note">
+          This ticket is <b>{{ STATUS_LABEL[request.status] }}</b> — no further transitions available.
+        </p>
+      </div>
+    }
+
+  </div>
+
+  <!-- Side panel -->
+  <aside class="detail-side">
+
+    <!-- Status timeline -->
+    <div class="card side-card">
+      <div class="section-h">Status</div>
+      <div class="timeline">
+        @for (step of STEPS; track step) {
+          <div class="tl-step {{ stepClass(step) }}">
+            <div class="dot2">
+              @if (stepClass(step) === 'done') {
+                <svg class="ic" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              }
+            </div>
+            <div class="s-nm">{{ STATUS_LABEL[step] }}</div>
+            <div class="s-tm">
+              {{ stepTime(step) || (stepClass(step) !== 'pending' ? 'completed' : 'pending') }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- SLA clocks -->
+    <div class="card side-card">
+      <div class="section-h">SLA clocks</div>
+      <div class="sla-block">
+        <div class="sla-lab">Response SLA</div>
+        <div class="sla-line">
+          <app-sla-tag [slaDeadline]="request.responseDeadline" [isOverdue]="!!request.isResponseOverdue" />
+        </div>
+      </div>
+      <div class="sla-block">
+        <div class="sla-lab">Resolution SLA</div>
+        <div class="sla-line">
+          <app-sla-tag [slaDeadline]="request.slaDeadline" [isOverdue]="!!request.isOverdue" />
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</div>

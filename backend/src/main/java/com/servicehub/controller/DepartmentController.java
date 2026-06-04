@@ -23,14 +23,15 @@ public class DepartmentController {
     private final DepartmentRepository departmentRepository;
 
     @GetMapping
-    @Operation(summary = "List all departments")
+    @Operation(
+        summary = "List active departments",
+        description = "Returns all active departments. Call this endpoint before registering to get valid department names."
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "List of departments"),
-        @ApiResponse(responseCode = "401", description = "Missing or invalid token",
-                content = @Content(schema = @Schema(example = "{\"error\": \"Unauthorized: missing or invalid token\"}")))
+        @ApiResponse(responseCode = "200", description = "List of active departments")
     })
     public ResponseEntity<List<Department>> getAll() {
-        return ResponseEntity.ok(departmentRepository.findAll());
+        return ResponseEntity.ok(departmentRepository.findByIsActiveTrue());
     }
 
     @GetMapping("/{id}")

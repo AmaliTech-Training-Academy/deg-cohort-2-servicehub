@@ -1,0 +1,55 @@
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService, Department } from '../../../core/services/auth.service';
+
+@Component({
+  selector: 'app-register',
+  imports: [ReactiveFormsModule, RouterLink],
+  templateUrl: './register.html',
+})
+export class RegisterComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  readonly departments = signal<Department[]>([]);
+  readonly deptLoading = signal(true);
+  readonly deptError = signal(false);
+
+  form = this.fb.nonNullable.group({
+    name:       ['', [Validators.required, Validators.minLength(2)]],
+    email:      ['', [Validators.required, Validators.email]],
+    password:   ['', [Validators.required, Validators.minLength(6)]],
+    department: ['', Validators.required],
+  });
+
+  readonly error = signal('');
+  readonly loading = signal(false);
+
+  ngOnInit(): void {
+    this.authService.getDepartments().subscribe({
+      next: depts => { this.departments.set(depts); this.deptLoading.set(false); },
+      error: () => { this.deptLoading.set(false); this.deptError.set(true); },
+    });
+  }
+
+  submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set('');
+
+    const { name, email, password, department } = this.form.getRawValue();
+    this.authService.register({ name, email, password, department }).subscribe({
+      next: () => { this.loading.set(false); this.router.navigateByUrl(this.authService.getDashboardRoute()); },
+      error: (err) => {
+        this.error.set(err?.error?.error ?? 'Registration failed. Please try again.');
+        this.loading.set(false);
+      },
+    });
+  }
+}
