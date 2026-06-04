@@ -1,11 +1,14 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService, ServiceRequestResponse } from '../../../core/services/dashboard.service';
-import { SlaBadge } from '../../../shared/components/sla-badge/sla-badge';
+import { PriorityChipComponent } from '../../../shared/components/priority-chip/priority-chip';
+import { StatusDotComponent } from '../../../shared/components/status-dot/status-dot';
+import { SlaTagComponent } from '../../../shared/components/sla-tag/sla-tag';
+import { TicketDetailComponent } from './ticket-detail/ticket-detail';
 
 @Component({
   selector: 'app-agent-dashboard',
-  imports: [FormsModule, SlaBadge],
+  imports: [FormsModule, PriorityChipComponent, StatusDotComponent, SlaTagComponent, TicketDetailComponent],
   templateUrl: './agent-dashboard.html',
 })
 export class AgentDashboard implements OnInit {
@@ -15,16 +18,17 @@ export class AgentDashboard implements OnInit {
   readonly error = signal('');
   readonly requests = signal<ServiceRequestResponse[]>([]);
   readonly advancing = signal(new Set<number>());
+  readonly selectedRequest = signal<ServiceRequestResponse | null>(null);
 
   readonly q = signal('');
   readonly statusFilter = signal('ALL');
   readonly prioFilter = signal('ALL');
 
   readonly NEXT_STATUS: Record<string, string> = {
-    OPEN: 'ASSIGNED', ASSIGNED: 'IN_PROGRESS', IN_PROGRESS: 'RESOLVED',
+    OPEN: 'ASSIGNED', ASSIGNED: 'IN_PROGRESS', IN_PROGRESS: 'RESOLVED', RESOLVED: 'CLOSED',
   };
   readonly NEXT_LABEL: Record<string, string> = {
-    OPEN: 'Assign', ASSIGNED: 'Start', IN_PROGRESS: 'Resolve',
+    OPEN: 'Assign', ASSIGNED: 'Start', IN_PROGRESS: 'Resolve', RESOLVED: 'Close',
   };
   readonly CAT_LABEL: Record<string, string> = {
     IT_SUPPORT: 'IT Support', FACILITIES: 'Facilities', HR_REQUEST: 'HR Request',
@@ -34,10 +38,6 @@ export class AgentDashboard implements OnInit {
     FACILITIES: 'M14.5 6.5a3.5 3.5 0 0 0-4.6 4.3L4 16.7 7.3 20l5.9-5.9a3.5 3.5 0 0 0 4.3-4.6l-2.3 2.3-2-2 2.3-2.3Z',
     HR_REQUEST: 'M4 13v-1a8 8 0 0 1 16 0v1M4 13h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5ZM20 13h-2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-5ZM18 19a3 3 0 0 1-3 3h-3',
   };
-  readonly STATUS_LABEL: Record<string, string> = {
-    OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed',
-  };
-
   readonly filtered = computed(() => {
     const q = this.q().trim().toLowerCase();
     return this.requests().filter(r => {
@@ -56,6 +56,18 @@ export class AgentDashboard implements OnInit {
   );
 
   ngOnInit(): void { this.load(); }
+
+  openDetail(id: number): void {
+    const r = this.requests().find(x => x.id === id);
+    if (r) this.selectedRequest.set(r);
+  }
+
+  closeDetail(): void { this.selectedRequest.set(null); }
+
+  onDetailAdvanced(updated: ServiceRequestResponse): void {
+    this.requests.update(list => list.map(r => r.id === updated.id ? updated : r));
+    this.selectedRequest.set(updated);
+  }
 
   private load(): void {
     this.loading.set(true);

@@ -29,3 +29,6 @@ Thumbs.db
 *.tfvars
 !*.tfvars.example
 .terraform.lock.hcl
+
+# ETL generated output
+data-engineering/output/*.csv

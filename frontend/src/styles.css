@@ -65,6 +65,7 @@ h1, h2, h3, .display { font-family: 'Bricolage Grotesque', sans-serif; letter-sp
   background-repeat: no-repeat; background-position: right 12px center;
 }
 .field-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background-color: #fff; }
+.field-select.invalid { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .field .err { color: var(--red); font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 4px; }
 .enter {
   width: 100%; margin-top: 18px; padding: 13px; border-radius: 11px; background: var(--ink); color: #fff;
@@ -244,6 +245,51 @@ h1, h2, h3, .display { font-family: 'Bricolage Grotesque', sans-serif; letter-sp
 .bar-row .num { width: 34px; text-align: right; font-family: 'JetBrains Mono'; font-size: 12.5px; font-weight: 600; flex: none; }
 .donut-panel { display: flex; flex-direction: column; align-items: center; }
 .donut-panel .section-h { align-self: flex-start; }
+.trend-svg { width: 100%; height: 130px; display: block; }
+.trend-x { display: flex; justify-content: space-between; margin-top: 6px; padding: 0 4px; font-size: 11px; color: var(--txt-faint); font-family: 'JetBrains Mono', monospace; }
+.trend-tooltip {
+  position: absolute; pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  background: var(--ink); color: #fff;
+  padding: 6px 10px; border-radius: 9px;
+  font-weight: 700; white-space: nowrap; text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ---------- DETAIL ---------- */
+.back-btn { margin-bottom: 18px; }
+.detail-grid { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 18px; align-items: start; }
+.detail-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.detail-head { padding: 24px; }
+.dh-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.tid { font-size: 12.5px; font-weight: 600; color: var(--txt-soft); margin-bottom: 6px; }
+.dh-title { font-size: 21px; line-height: 1.2; }
+.dh-desc { margin: 14px 0 16px; font-size: 14.5px; line-height: 1.55; color: var(--txt); }
+.dh-meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--txt-soft); }
+.dh-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.dh-meta .ic { color: var(--txt-faint); }
+.detail-conv { padding: 24px; }
+.detail-act { padding: 20px 24px; }
+.act-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.act-note { margin-top: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.detail-side { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 78px; }
+.side-card { padding: 20px; }
+.timeline { position: relative; padding-left: 26px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.tl-step { position: relative; padding-bottom: 18px; }
+.tl-step:last-child { padding-bottom: 0; }
+.tl-step .dot2 { position: absolute; left: -26px; top: 0; width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--paper-2); background: var(--line); display: grid; place-items: center; color: #fff; }
+.tl-step.done .dot2 { background: var(--teal); }
+.tl-step.curr .dot2 { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.tl-step .s-nm { font-weight: 700; font-size: 13.5px; }
+.tl-step.pending .s-nm { color: var(--txt-faint); }
+.tl-step .s-tm { font-size: 11.5px; color: var(--txt-faint); margin-top: 1px; }
+.sla-block { margin-bottom: 14px; }
+.sla-block:last-child { margin-bottom: 0; }
+.sla-lab { font-size: 12.5px; color: var(--txt-soft); margin-bottom: 6px; font-weight: 600; }
+.sla-line { display: flex; align-items: center; gap: 9px; }
+.sla-sub { font-size: 11.5px; color: var(--txt-faint); }
 
 /* ---------- TOAST ---------- */
 .flash {
@@ -275,6 +321,8 @@ h1, h2, h3, .display { font-family: 'Bricolage Grotesque', sans-serif; letter-sp
   .content { padding: 20px 18px 70px; }
   .stat-grid { grid-template-columns: repeat(2,1fr); }
   .dash-row { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-side { position: static; }
 }
 @media (max-width: 680px) {
   .topbar .crumb { display: none; }

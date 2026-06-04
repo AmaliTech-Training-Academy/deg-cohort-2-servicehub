@@ -2,6 +2,7 @@ package com.servicehub.service;
 
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
+import com.servicehub.model.Comment;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Priority;
@@ -9,6 +10,7 @@ import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +35,7 @@ class WorkflowServiceTest {
 
     @Mock private ServiceRequestRepository requestRepository;
     @Mock private UserRepository userRepository;
+    @Mock private CommentRepository commentRepository;
 
     @InjectMocks private WorkflowService workflowService;
 
@@ -62,7 +66,7 @@ class WorkflowServiceTest {
     void updateStatus_unknownRequestId_throwsNotFoundException() {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> workflowService.updateStatus(99L, "ASSIGNED", "agent@test.com"))
+        assertThatThrownBy(() -> workflowService.updateStatus(99L, "ASSIGNED", "agent@test.com", null))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
@@ -72,7 +76,7 @@ class WorkflowServiceTest {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
         when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> workflowService.updateStatus(1L, "ASSIGNED", "nobody@test.com"))
+        assertThatThrownBy(() -> workflowService.updateStatus(1L, "ASSIGNED", "nobody@test.com", null))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("User not found");
     }
@@ -87,7 +91,7 @@ class WorkflowServiceTest {
         when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequest result = workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com");
+        ServiceRequest result = workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
 
         assertThat(result.getStatus()).isEqualTo(RequestStatus.ASSIGNED);
         assertThat(result.getAssignedTo()).isEqualTo(agent);
@@ -104,7 +108,7 @@ class WorkflowServiceTest {
         when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequest result = workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com");
+        ServiceRequest result = workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
 
         assertThat(result.getFirstResponseAt()).isEqualTo(original);
     }
@@ -116,7 +120,7 @@ class WorkflowServiceTest {
         when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequest result = workflowService.updateStatus(1L, "RESOLVED", "agent@test.com");
+        ServiceRequest result = workflowService.updateStatus(1L, "RESOLVED", "agent@test.com", null);
 
         assertThat(result.getStatus()).isEqualTo(RequestStatus.RESOLVED);
         assertThat(result.getResolvedAt()).isNotNull();
@@ -128,9 +132,35 @@ class WorkflowServiceTest {
         when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com");
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
 
         verify(requestRepository).save(openRequest);
+    }
+
+    @Test
+    void updateStatus_withNonBlankComment_persistsSystemComment() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", "Assigned to John — on it");
+
+        verify(commentRepository).save(argThat((Comment c) ->
+                c.getBody().contains("Assigned to John — on it")
+                && c.isSystemGenerated()
+                && c.getAuthor().equals(agent)));
+    }
+
+    @Test
+    void updateStatus_withBlankComment_doesNotPersistComment() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
+
+        verify(commentRepository, never()).save(any());
     }
 
     // -----------------------------------------------------------------------
