@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServiceHub Notification</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#2563eb;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">ServiceHub</h1>
+              <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px;">Service Request Management</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 8px;color:#374151;font-size:15px;">Hi <strong th:text="${recipientName}">User</strong>,</p>
+              <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+                The status of a service request has been updated. Here are the details:
+              </p>
+
+              <!-- Ticket card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:6px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:16px 20px;border-bottom:1px solid #e5e7eb;background-color:#f9fafb;">
+                    <span style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Request</span>
+                    <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#111827;" th:text="'#' + ${requestId} + ' — ' + ${requestTitle}">#1 — Request Title</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="50%" style="padding-bottom:12px;">
+                          <span style="font-size:12px;color:#6b7280;display:block;">Previous Status</span>
+                          <span style="font-size:14px;color:#374151;font-weight:500;" th:text="${previousStatus}">Open</span>
+                        </td>
+                        <td width="50%" style="padding-bottom:12px;">
+                          <span style="font-size:12px;color:#6b7280;display:block;">New Status</span>
+                          <span th:text="${newStatus}"
+                                style="display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:9999px;background-color:#dbeafe;color:#1d4ed8;">In Progress</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="50%">
+                          <span style="font-size:12px;color:#6b7280;display:block;">Priority</span>
+                          <span style="font-size:14px;color:#374151;font-weight:500;" th:text="${priority}">Medium</span>
+                        </td>
+                        <td width="50%">
+                          <span style="font-size:12px;color:#6b7280;display:block;">Category</span>
+                          <span style="font-size:14px;color:#374151;font-weight:500;" th:text="${category}">IT Support</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:6px;background-color:#2563eb;">
+                    <a th:href="${ticketUrl}" href="#"
+                       style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">
+                      View Request
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid #e5e7eb;background-color:#f9fafb;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+                This is an automated notification from ServiceHub. Please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
