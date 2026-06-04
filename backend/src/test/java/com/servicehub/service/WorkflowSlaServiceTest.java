@@ -55,7 +55,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.ASSIGNED);
         result.setAssignedTo(agent);
         result.setFirstResponseAt(LocalDateTime.now());
-        when(workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("ASSIGNED"), eq("agent@test.com"), any())).thenReturn(result);
 
         StatusUpdateRequest dto = new StatusUpdateRequest();
         dto.setNewStatus("ASSIGNED");
@@ -71,7 +71,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.IN_PROGRESS);
         result.setAssignedTo(agent);
         result.setFirstResponseAt(LocalDateTime.now().minusHours(1));
-        when(workflowService.updateStatus(1L, "IN_PROGRESS", "mgr@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("IN_PROGRESS"), eq("mgr@test.com"), any())).thenReturn(result);
 
         service.updateStatus(1L, new StatusUpdateRequest() {{ setNewStatus("IN_PROGRESS"); }}, "mgr@test.com");
 
@@ -83,7 +83,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.RESOLVED);
         result.setAssignedTo(agent);
         result.setResolvedAt(LocalDateTime.now());
-        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("RESOLVED"), eq("agent@test.com"), any())).thenReturn(result);
 
         ServiceRequestResponse resp = service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("RESOLVED"); }}, "agent@test.com");
@@ -97,7 +97,7 @@ class WorkflowSlaServiceTest {
     void resolvedToClosed_isValid() {
         ServiceRequest result = buildRequest(RequestStatus.CLOSED);
         result.setResolvedAt(LocalDateTime.now().minusMinutes(5));
-        when(workflowService.updateStatus(1L, "CLOSED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("CLOSED"), eq("agent@test.com"), any())).thenReturn(result);
 
         assertThat(service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("CLOSED"); }}, "agent@test.com")
@@ -106,7 +106,7 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("Invalid transition OPEN -> IN_PROGRESS throws")
     void invalidTransition_throws() {
-        when(workflowService.updateStatus(1L, "IN_PROGRESS", "agent@test.com"))
+        when(workflowService.updateStatus(eq(1L), eq("IN_PROGRESS"), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException("Invalid status transition: OPEN -> IN_PROGRESS"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,
@@ -117,7 +117,7 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("CLOSED is terminal — any further transition throws")
     void closedIsTerminal_throws() {
-        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com"))
+        when(workflowService.updateStatus(eq(1L), eq("RESOLVED"), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException("Invalid status transition: CLOSED -> RESOLVED"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,

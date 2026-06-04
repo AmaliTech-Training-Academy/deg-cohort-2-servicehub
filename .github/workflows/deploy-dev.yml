@@ -1,13 +1,68 @@
-# Deploy to DEV — disabled until the dev server is provisioned.
-# To enable: uncomment the trigger and job below, and add
-# DEV_SERVER_HOST, DEV_SERVER_USER, DEV_SERVER_SSH_KEY as repository secrets.
+name: Deploy to DEV
 
 on:
-  workflow_dispatch: # manual trigger only until fully configured
+  push:
+    branches: [dev]
 
 jobs:
-  placeholder:
-    name: Deploy to DEV (not configured)
+  deploy:
+    name: Deploy to DEV server
     runs-on: ubuntu-latest
+    environment: dev
     steps:
-      - run: echo "Dev deployment is not configured yet."
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}
+          username: ${{ secrets.DEV_SERVER_USER }}
+          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          script: |
+            cd /opt/app
+
+            ROLLBACK_SHA=$(git rev-parse HEAD)
+
+            git fetch origin
+            git checkout dev
+            git pull origin dev
+
+            export RDS_ENDPOINT=${{ secrets.DEV_RDS_ENDPOINT }}
+            export DB_NAME=${{ secrets.DEV_DB_NAME }}
+            export DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
+            export DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
+            export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+
+            docker compose -f docker-compose.yml \
+                           -f docker-compose.aws.yml \
+                           up -d --build
+
+            docker system prune -f
+            sleep 15
+
+            if ! curl -sf http://localhost:8080/actuator/health; then
+              echo "Health check failed — rolling back to $ROLLBACK_SHA"
+              git checkout $ROLLBACK_SHA
+              export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+              docker compose -f docker-compose.yml \
+                             -f docker-compose.aws.yml \
+                             up -d --build
+              echo "Rollback complete"
+              exit 1
+            fi
+
+            docker compose ps
+
+      - name: Notify on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"CI Alerts <onboarding@resend.dev>\",
+              \"to\": [\"$MAIL_TO\"],
+              \"subject\": \"Deploy to DEV failed — rollback triggered\",
+              \"text\": \"Deployment to DEV server failed and was rolled back.\nCommit: ${{ github.sha }}\nTriggered by: ${{ github.actor }}\nView run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            }"

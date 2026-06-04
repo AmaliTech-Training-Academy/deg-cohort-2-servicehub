@@ -43,8 +43,12 @@
       </div>
     </div>
 
-    <!-- Advance action -->
-    @if (nextStatus) {
+    <!-- Advance action (agents/managers only) -->
+    @if (viewOnly) {
+      <div class="card detail-act">
+        <p class="note">You'll be notified as the support team updates this request. Only agents can change its status.</p>
+      </div>
+    } @else if (nextStatus) {
       <div class="card detail-act">
         <div class="section-h">Move this ticket forward</div>
 

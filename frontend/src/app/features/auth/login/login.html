@@ -12,10 +12,10 @@
     <h1>Sign in</h1>
     <p class="sub">Welcome back. Sign in to submit and track your requests.</p>
 
-    @if (error) {
+    @if (error()) {
       <div class="form-err">
         <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
-        {{ error }}
+        {{ error() }}
       </div>
     }
 
@@ -44,8 +44,8 @@
         }
       </div>
 
-      <button type="submit" class="enter" [disabled]="loading">
-        {{ loading ? 'Signing in…' : 'Sign in' }}
+      <button type="submit" class="enter" [disabled]="loading()">
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </form>

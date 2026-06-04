@@ -21,3 +21,14 @@ frontend/build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# ETL generated output
+data-engineering/output/*.csv
