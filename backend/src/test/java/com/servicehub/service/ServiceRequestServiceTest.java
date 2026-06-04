@@ -2,6 +2,7 @@ package com.servicehub.service;
 
 import com.servicehub.dto.*;
 import com.servicehub.exception.BadRequestException;
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
@@ -56,17 +57,10 @@ class ServiceRequestServiceTest {
 
     @BeforeEach
     void setUp() {
-        employee = User.builder().id(1L).email("employee@test.com")
-                .fullName("Test Employee").role(Role.EMPLOYEE).password("pass").build();
-
-        manager = User.builder().id(2L).email("manager@test.com")
-                .fullName("Test Manager").role(Role.MANAGER).password("pass").build();
-
-        agent = User.builder().id(3L).email("agent@test.com")
-                .fullName("Test Agent").role(Role.AGENT).password("pass").build();
-
-        otherEmployee = User.builder().id(4L).email("other@test.com")
-                .fullName("Other Employee").role(Role.EMPLOYEE).password("pass").build();
+        employee      = UserFixtures.employee();
+        manager       = UserFixtures.manager();
+        agent         = UserFixtures.agent();
+        otherEmployee = UserFixtures.otherEmployee();
 
         itDept = Department.builder().id(1L).name("IT Support")
                 .category(RequestCategory.IT_SUPPORT).isActive(true).build();
@@ -111,13 +105,13 @@ class ServiceRequestServiceTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("HIGH");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
         when(requestRepository.save(any())).thenAnswer(inv -> {
             ServiceRequest r = inv.getArgument(0); r.setId(42L); return r;
         });
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getId()).isEqualTo(42L);
         assertThat(result.getTitle()).isEqualTo("Fix laptop");
@@ -125,7 +119,7 @@ class ServiceRequestServiceTest {
         assertThat(result.getPriority()).isEqualTo("HIGH");
         assertThat(result.getStatus()).isEqualTo("OPEN");
         assertThat(result.getDepartmentName()).isEqualTo("IT Support");
-        assertThat(result.getRequesterName()).isEqualTo("Test Employee");
+        assertThat(result.getRequesterName()).isEqualTo(UserFixtures.EMPLOYEE_NAME);
     }
 
     @Test
@@ -135,11 +129,11 @@ class ServiceRequestServiceTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("MEDIUM");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getDepartmentName()).isEqualTo("IT Support");
         assertThat(result.getCategory()).isEqualTo("IT_SUPPORT");
@@ -152,11 +146,11 @@ class ServiceRequestServiceTest {
         dto.setCategory("FACILITIES");
         dto.setPriority("LOW");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.FACILITIES)).thenReturn(Optional.of(facilitiesDept));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getDepartmentName()).isEqualTo("Facilities");
         assertThat(result.getCategory()).isEqualTo("FACILITIES");
@@ -169,11 +163,11 @@ class ServiceRequestServiceTest {
         dto.setCategory("HR_REQUEST");
         dto.setPriority("MEDIUM");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.HR_REQUEST)).thenReturn(Optional.of(hrDept));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getDepartmentName()).isEqualTo("HR");
         assertThat(result.getCategory()).isEqualTo("HR_REQUEST");
@@ -186,12 +180,12 @@ class ServiceRequestServiceTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("CRITICAL");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
         when(slaService.computeDeadline(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(LocalDateTime.now().plusHours(2));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getSlaDeadline()).isAfter(LocalDateTime.now().plusHours(1));
         assertThat(result.getSlaDeadline()).isBefore(LocalDateTime.now().plusHours(3));
@@ -204,12 +198,12 @@ class ServiceRequestServiceTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("LOW");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(itDept));
         when(slaService.computeDeadline(RequestCategory.IT_SUPPORT, Priority.LOW)).thenReturn(LocalDateTime.now().plusHours(48));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getSlaDeadline()).isAfter(LocalDateTime.now().plusHours(47));
     }
@@ -221,11 +215,11 @@ class ServiceRequestServiceTest {
         dto.setCategory("IT_SUPPORT");
         dto.setPriority("LOW");
 
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(any())).thenReturn(Optional.empty());
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.createRequest(dto, "employee@test.com");
+        ServiceRequestResponse result = service.createRequest(dto, "emp@test.com");
 
         assertThat(result.getSlaDeadline()).isAfter(LocalDateTime.now().plusHours(23));
         assertThat(result.getSlaDeadline()).isBefore(LocalDateTime.now().plusHours(25));
@@ -274,13 +268,13 @@ class ServiceRequestServiceTest {
     @Test
     void getMyRequests_returnsOnlyRequestsForThatUser() {
         Page<ServiceRequest> page = new PageImpl<>(List.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
-        when(requestRepository.findByRequesterIdOrderByCreatedAtDesc(eq(1L), any())).thenReturn(page);
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
+        when(requestRepository.findByRequesterIdOrderByCreatedAtDesc(eq(UserFixtures.EMPLOYEE_ID), any())).thenReturn(page);
 
-        Page<ServiceRequestResponse> result = service.getMyRequests("employee@test.com", 0, 10);
+        Page<ServiceRequestResponse> result = service.getMyRequests("emp@test.com", 0, 10);
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getRequesterName()).isEqualTo("Test Employee");
+        assertThat(result.getContent().get(0).getRequesterName()).isEqualTo(UserFixtures.EMPLOYEE_NAME);
     }
 
     @Test
@@ -296,9 +290,9 @@ class ServiceRequestServiceTest {
     @Test
     void getRequestById_existingId_returnsResponse() {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
 
-        ServiceRequestResponse result = service.getRequestById(1L, "employee@test.com");
+        ServiceRequestResponse result = service.getRequestById(1L, "emp@test.com");
 
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("Fix printer");
@@ -310,7 +304,7 @@ class ServiceRequestServiceTest {
     void getRequestById_nonExistentId_throwsRuntimeException() {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getRequestById(99L, "employee@test.com"))
+        assertThatThrownBy(() -> service.getRequestById(99L, "emp@test.com"))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
@@ -322,10 +316,10 @@ class ServiceRequestServiceTest {
         dto.setTitle("Updated printer fix");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.updateRequest(1L, dto, "employee@test.com");
+        ServiceRequestResponse result = service.updateRequest(1L, dto, "emp@test.com");
 
         assertThat(result.getTitle()).isEqualTo("Updated printer fix");
     }
@@ -336,10 +330,10 @@ class ServiceRequestServiceTest {
         dto.setTitle("Manager-adjusted title");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("manager@test.com")).thenReturn(Optional.of(manager));
+        when(userRepository.findByEmail("mgr@test.com")).thenReturn(Optional.of(manager));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.updateRequest(1L, dto, "manager@test.com");
+        ServiceRequestResponse result = service.updateRequest(1L, dto, "mgr@test.com");
 
         assertThat(result.getTitle()).isEqualTo("Manager-adjusted title");
     }
@@ -363,11 +357,11 @@ class ServiceRequestServiceTest {
         dto.setCategory("FACILITIES");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(departmentRepository.findByCategory(RequestCategory.FACILITIES)).thenReturn(Optional.of(facilitiesDept));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.updateRequest(1L, dto, "employee@test.com");
+        ServiceRequestResponse result = service.updateRequest(1L, dto, "emp@test.com");
 
         assertThat(result.getDepartmentName()).isEqualTo("Facilities");
         assertThat(result.getCategory()).isEqualTo("FACILITIES");
@@ -379,11 +373,11 @@ class ServiceRequestServiceTest {
         dto.setPriority("CRITICAL");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL)).thenReturn(Optional.of(criticalPolicy));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.updateRequest(1L, dto, "employee@test.com");
+        service.updateRequest(1L, dto, "emp@test.com");
 
         verify(slaPolicyRepository).findByCategoryAndPriority(RequestCategory.IT_SUPPORT, Priority.CRITICAL);
     }
@@ -392,7 +386,7 @@ class ServiceRequestServiceTest {
     void updateRequest_nonExistentRequest_throwsRuntimeException() {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.updateRequest(99L, new UpdateRequestDto(), "employee@test.com"))
+        assertThatThrownBy(() -> service.updateRequest(99L, new UpdateRequestDto(), "emp@test.com"))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Request not found");
     }
@@ -403,10 +397,10 @@ class ServiceRequestServiceTest {
         dto.setTitle("   ");
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
-        when(userRepository.findByEmail("employee@test.com")).thenReturn(Optional.of(employee));
+        when(userRepository.findByEmail("emp@test.com")).thenReturn(Optional.of(employee));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ServiceRequestResponse result = service.updateRequest(1L, dto, "employee@test.com");
+        ServiceRequestResponse result = service.updateRequest(1L, dto, "emp@test.com");
 
         assertThat(result.getTitle()).isEqualTo("Fix printer");
     }
@@ -424,7 +418,7 @@ class ServiceRequestServiceTest {
         ServiceRequestResponse result = service.updateStatus(1L, update, "agent@test.com");
 
         assertThat(result.getStatus()).isEqualTo("ASSIGNED");
-        assertThat(result.getAssignedToName()).isEqualTo("Test Agent");
+        assertThat(result.getAssignedToName()).isEqualTo(UserFixtures.AGENT_NAME);
     }
 
     @Test
