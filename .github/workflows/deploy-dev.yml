@@ -18,6 +18,8 @@ jobs:
           script: |
             cd /opt/app
 
+            ROLLBACK_SHA=$(git rev-parse HEAD)
+
             git fetch origin
             git checkout dev
             git pull origin dev
@@ -32,4 +34,16 @@ jobs:
                            up -d --build
 
             docker system prune -f
+            sleep 15
+
+            if ! curl -sf http://localhost:8080/actuator/health; then
+              echo "Health check failed — rolling back to $ROLLBACK_SHA"
+              git checkout $ROLLBACK_SHA
+              docker compose -f docker-compose.yml \
+                             -f docker-compose.aws.yml \
+                             up -d --build
+              echo "Rollback complete"
+              exit 1
+            fi
+
             docker compose ps
