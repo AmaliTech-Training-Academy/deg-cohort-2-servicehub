@@ -9,10 +9,8 @@ public class AgentDashboardPage extends BasePage {
 
     private static final String ROUTE = "/agent-dashboard";
 
-    private static final By LOGOUT_BTN = By.xpath(
-            "//button[contains(text(),'Sign out') " +
-            "or contains(text(),'Logout') " +
-            "or contains(text(),'Log out')]");
+    /** Logout button — SVG-icon only (no text). Class from dashboard-shell.html. */
+    private static final By LOGOUT_BTN = By.cssSelector("button.who-logout");
 
     public AgentDashboardPage(WebDriver driver) {
         super(driver);

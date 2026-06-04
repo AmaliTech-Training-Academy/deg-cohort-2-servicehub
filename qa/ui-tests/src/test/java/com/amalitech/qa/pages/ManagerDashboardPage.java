@@ -12,11 +12,8 @@ public class ManagerDashboardPage extends BasePage {
 
     private static final String ROUTE = "/dashboard";
 
-    /** Logout button — text varies by implementation; try both common labels. */
-    private static final By LOGOUT_BTN = By.xpath(
-            "//button[contains(text(),'Sign out') " +
-            "or contains(text(),'Logout') " +
-            "or contains(text(),'Log out')]");
+    /** Logout button — SVG-icon only (no text). Class from dashboard-shell.html. */
+    private static final By LOGOUT_BTN = By.cssSelector("button.who-logout");
 
     public ManagerDashboardPage(WebDriver driver) {
         super(driver);
