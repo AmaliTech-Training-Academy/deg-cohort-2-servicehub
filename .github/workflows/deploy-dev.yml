@@ -47,3 +47,20 @@ jobs:
             fi
 
             docker compose ps
+
+      - name: Notify on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"CI Alerts <onboarding@resend.dev>\",
+              \"to\": [\"$MAIL_TO\"],
+              \"subject\": \"Deploy to DEV failed — rollback triggered\",
+              \"text\": \"Deployment to DEV server failed and was rolled back.\nCommit: ${{ github.sha }}\nTriggered by: ${{ github.actor }}\nView run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            }"
