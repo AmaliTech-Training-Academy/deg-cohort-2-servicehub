@@ -28,8 +28,12 @@ public class LoginPage extends BasePage {
     @FindBy(css = "button[type=submit]")
     private WebElement submitButton;
 
-    /** Error paragraph rendered on invalid credentials. */
-    private static final By ERROR_SELECTOR = By.cssSelector("p.text-red-600");
+    /**
+     * Error block rendered on invalid credentials (server-side error).
+     * PR #84 login redesign changed this from p.text-red-600 to div.form-err.
+     * If the login component is restyled again, verify this selector.
+     */
+    private static final By ERROR_SELECTOR = By.cssSelector("div.form-err");
 
     // ── Construction / navigation ─────────────────────────────────────────────
 
