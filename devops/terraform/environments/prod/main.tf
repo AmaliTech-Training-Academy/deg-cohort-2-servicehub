@@ -59,5 +59,8 @@ module "ecs" {
   db_username       = var.db_username
   db_password       = var.db_password
   jwt_secret        = var.jwt_secret
+  mail_username     = var.mail_username
+  mail_password     = var.mail_password
+  frontend_url      = "http://servicehub-prod-alb-758600000.eu-west-1.elb.amazonaws.com"
   tags              = local.tags
 }
