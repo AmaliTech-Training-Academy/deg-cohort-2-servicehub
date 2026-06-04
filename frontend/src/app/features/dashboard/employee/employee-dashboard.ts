@@ -59,7 +59,16 @@ export class EmployeeDashboard implements OnInit, OnDestroy {
         debounceTime(200),
         switchMap(() => this.dashboardService.getMyRequests(0, 20))
       ).subscribe({
-        next: p => this.requests.set(p.content),
+        next: p => {
+          this.requests.set(p.content);
+          // If the employee is viewing a detail, sync it with the refreshed data
+          // so status changes are reflected immediately without a manual reload.
+          const open = this.selectedRequest();
+          if (open) {
+            const refreshed = p.content.find(r => r.id === open.id);
+            if (refreshed) this.selectedRequest.set(refreshed);
+          }
+        },
         error: () => { /* silent — existing list stays visible on refresh failure */ },
       })
     );
