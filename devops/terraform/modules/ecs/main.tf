@@ -198,7 +198,8 @@ resource "aws_lb_target_group" "backend" {
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
+    matcher             = "200-401"
   }
 
   tags = var.tags
