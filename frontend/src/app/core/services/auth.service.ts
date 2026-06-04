@@ -5,6 +5,13 @@ import { environment } from '../../../environments/environment';
 
 export type UserRole = 'MANAGER' | 'AGENT' | 'EMPLOYEE';
 
+export interface Department {
+  id: number;
+  name: string;
+  category: string;
+  isActive: boolean;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -29,7 +36,12 @@ export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly NAME_KEY = 'auth_name';
   private readonly API = `${environment.apiUrl}/api/auth`;
+  private readonly BASE = `${environment.apiUrl}/api`;
   private http = inject(HttpClient);
+
+  getDepartments(): Observable<Department[]> {
+    return this.http.get<Department[]>(`${this.BASE}/departments`);
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http

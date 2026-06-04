@@ -4,6 +4,7 @@ import com.servicehub.dto.ServiceRequestDto;
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.dto.StatusUpdateRequest;
 import com.servicehub.exception.InvalidStatusTransitionException;
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
@@ -40,9 +41,9 @@ class WorkflowSlaServiceTest {
 
     @BeforeEach
     void setUp() {
-        employee  = User.builder().id(1L).email("user@test.com").fullName("Test User").role(Role.EMPLOYEE).build();
-        agent     = User.builder().id(2L).email("agent@test.com").fullName("Agent One").role(Role.AGENT).build();
-        manager   = User.builder().id(3L).email("mgr@test.com").fullName("Manager").role(Role.MANAGER).build();
+        employee  = UserFixtures.employee();
+        agent     = UserFixtures.agent();
+        manager   = UserFixtures.manager();
         highPolicy = SlaPolicy.builder().id(1L).priority(Priority.HIGH)
                 .responseTimeHours(1).resolutionTimeHours(4).build();
         itDept    = Department.builder().id(1L).name("IT Support").category(RequestCategory.IT_SUPPORT).build();
@@ -55,7 +56,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.ASSIGNED);
         result.setAssignedTo(agent);
         result.setFirstResponseAt(LocalDateTime.now());
-        when(workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("ASSIGNED"), eq("agent@test.com"), any())).thenReturn(result);
 
         StatusUpdateRequest dto = new StatusUpdateRequest();
         dto.setNewStatus("ASSIGNED");
@@ -71,7 +72,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.IN_PROGRESS);
         result.setAssignedTo(agent);
         result.setFirstResponseAt(LocalDateTime.now().minusHours(1));
-        when(workflowService.updateStatus(1L, "IN_PROGRESS", "mgr@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("IN_PROGRESS"), eq("mgr@test.com"), any())).thenReturn(result);
 
         service.updateStatus(1L, new StatusUpdateRequest() {{ setNewStatus("IN_PROGRESS"); }}, "mgr@test.com");
 
@@ -83,7 +84,7 @@ class WorkflowSlaServiceTest {
         ServiceRequest result = buildRequest(RequestStatus.RESOLVED);
         result.setAssignedTo(agent);
         result.setResolvedAt(LocalDateTime.now());
-        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("RESOLVED"), eq("agent@test.com"), any())).thenReturn(result);
 
         ServiceRequestResponse resp = service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("RESOLVED"); }}, "agent@test.com");
@@ -97,7 +98,7 @@ class WorkflowSlaServiceTest {
     void resolvedToClosed_isValid() {
         ServiceRequest result = buildRequest(RequestStatus.CLOSED);
         result.setResolvedAt(LocalDateTime.now().minusMinutes(5));
-        when(workflowService.updateStatus(1L, "CLOSED", "agent@test.com")).thenReturn(result);
+        when(workflowService.updateStatus(eq(1L), eq("CLOSED"), eq("agent@test.com"), any())).thenReturn(result);
 
         assertThat(service.updateStatus(1L,
                 new StatusUpdateRequest() {{ setNewStatus("CLOSED"); }}, "agent@test.com")
@@ -106,7 +107,7 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("Invalid transition OPEN -> IN_PROGRESS throws")
     void invalidTransition_throws() {
-        when(workflowService.updateStatus(1L, "IN_PROGRESS", "agent@test.com"))
+        when(workflowService.updateStatus(eq(1L), eq("IN_PROGRESS"), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException("Invalid status transition: OPEN -> IN_PROGRESS"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,
@@ -117,7 +118,7 @@ class WorkflowSlaServiceTest {
 
     @Test @DisplayName("CLOSED is terminal — any further transition throws")
     void closedIsTerminal_throws() {
-        when(workflowService.updateStatus(1L, "RESOLVED", "agent@test.com"))
+        when(workflowService.updateStatus(eq(1L), eq("RESOLVED"), eq("agent@test.com"), any()))
                 .thenThrow(new InvalidStatusTransitionException("Invalid status transition: CLOSED -> RESOLVED"));
 
         assertThatThrownBy(() -> service.updateStatus(1L,
