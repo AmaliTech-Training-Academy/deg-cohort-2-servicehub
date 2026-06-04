@@ -1,0 +1,71 @@
+name: Terraform CI
+
+on:
+  push:
+    paths:
+      - 'devops/terraform/**'
+  pull_request:
+    paths:
+      - 'devops/terraform/**'
+
+concurrency:
+  group: terraform-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Format ────────────────────────────────────────────────────────────────
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.8'
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+        working-directory: devops/terraform
+
+  # ── 2. Validate (both environments) ──────────────────────────────────────────
+  validate:
+    name: Validate — ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.8'
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+        working-directory: devops/terraform/environments/${{ matrix.environment }}
+
+      - name: Terraform validate
+        run: terraform validate
+        working-directory: devops/terraform/environments/${{ matrix.environment }}
+
+  # ── 3. Security scan (Checkov) ────────────────────────────────────────────────
+  security:
+    name: Security Scan (Checkov)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkov scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: devops/terraform
+          framework: terraform
+          soft_fail: true          # advisory — remove to make it a hard gate
+          output_format: cli
+          download_external_modules: false
+

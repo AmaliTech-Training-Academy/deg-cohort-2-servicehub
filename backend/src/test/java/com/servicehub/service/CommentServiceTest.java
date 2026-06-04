@@ -4,13 +4,11 @@ import com.servicehub.dto.CommentRequest;
 import com.servicehub.dto.CommentResponse;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
+import com.servicehub.fixtures.ServiceRequestFixtures;
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.model.Comment;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
-import com.servicehub.model.enums.Priority;
-import com.servicehub.model.enums.RequestCategory;
-import com.servicehub.model.enums.RequestStatus;
-import com.servicehub.model.enums.Role;
 import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
@@ -46,21 +44,10 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        agent = User.builder().id(1L).email("agent@test.com")
-                .fullName("Agent One").role(Role.AGENT).password("pass").build();
-
-        employee = User.builder().id(2L).email("emp@test.com")
-                .fullName("Test Employee").role(Role.EMPLOYEE).password("pass").build();
-
-        otherEmployee = User.builder().id(3L).email("other@test.com")
-                .fullName("Other Employee").role(Role.EMPLOYEE).password("pass").build();
-
-        request = ServiceRequest.builder()
-                .id(1L).title("Fix printer")
-                .category(RequestCategory.IT_SUPPORT).priority(Priority.HIGH)
-                .status(RequestStatus.OPEN).requester(employee)
-                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
-                .build();
+        agent         = UserFixtures.agent();
+        employee      = UserFixtures.employee();
+        otherEmployee = UserFixtures.otherEmployee();
+        request       = ServiceRequestFixtures.openRequest(employee);
     }
 
     @Test
