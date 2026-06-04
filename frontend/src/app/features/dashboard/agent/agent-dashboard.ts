@@ -1,10 +1,11 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription, debounceTime, switchMap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService, ServiceRequestResponse } from '../../../core/services/dashboard.service';
 import { SseService, SseEvent } from '../../../core/services/sse.service';
+import { formatStatus } from '../../../shared/utils/status-labels';
 import { PriorityChipComponent } from '../../../shared/components/priority-chip/priority-chip';
 import { StatusDotComponent } from '../../../shared/components/status-dot/status-dot';
 import { SlaTagComponent } from '../../../shared/components/sla-tag/sla-tag';
@@ -26,6 +27,7 @@ export class AgentDashboard implements OnInit, OnDestroy {
   readonly advancing = signal(new Set<number>());
   readonly selectedRequest = signal<ServiceRequestResponse | null>(null);
   readonly toastMessage = signal('');
+  readonly connectionStatus = signal<'connected' | 'reconnecting'>('connected');
 
   readonly q = signal('');
   readonly statusFilter = signal('ALL');
@@ -63,16 +65,28 @@ export class AgentDashboard implements OnInit, OnDestroy {
     !!this.q().trim() || this.statusFilter() !== 'ALL' || this.prioFilter() !== 'ALL'
   );
 
-  private sseSubscription?: Subscription;
+  private readonly sseSubscription = new Subscription();
+  private readonly refreshTrigger = new Subject<void>();
   private toastTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
     this.load();
+
+    this.sseSubscription.add(
+      this.refreshTrigger.pipe(
+        debounceTime(200),
+        switchMap(() => this.dashboardService.getRequests(0, 20))
+      ).subscribe({
+        next: p => this.requests.set(p.content),
+        error: () => { /* silent — existing list stays visible on refresh failure */ },
+      })
+    );
+
     this.connectToStream();
   }
 
   ngOnDestroy(): void {
-    this.sseSubscription?.unsubscribe();
+    this.sseSubscription.unsubscribe();
     clearTimeout(this.toastTimer);
   }
 
@@ -84,41 +98,34 @@ export class AgentDashboard implements OnInit, OnDestroy {
     });
   }
 
-  private refresh(): void {
-    this.dashboardService.getRequests(0, 20).subscribe({
-      next: p => this.requests.set(p.content),
-      error: () => { /* silent — existing list stays visible on refresh failure */ },
-    });
-  }
+  private refresh(): void { this.refreshTrigger.next(); }
 
   private connectToStream(): void {
     const token = this.authService.getToken();
     if (!token) return;
 
-    const url = `${environment.apiUrl}/api/notifications/stream?token=${token}`;
+    // Security note: EventSource does not support custom headers, so the JWT must be
+    // passed as a query parameter. This means the token appears in server access logs
+    // and the browser Network tab URL. This is an accepted trade-off for SSE — the
+    // backend validates the token before creating the emitter and rejects invalid ones.
+    const url = `${environment.apiUrl}/api/notifications/stream?token=${encodeURIComponent(token)}`;
 
-    this.sseSubscription = this.sseService.stream<SseEvent>(url).subscribe({
-      next: event => {
-        if (event.type === 'TICKET_UPDATED' || event.type === 'TICKET_ASSIGNED') {
-          this.refresh();
-          this.showToast(`Ticket #SH-${event.requestId} updated to ${this.formatStatus(event.detail)}`);
-        }
-        if (event.type === 'SLA_BREACHED') {
-          this.refresh();
-          this.showToast(`Ticket #SH-${event.requestId} SLA breached — priority escalated`);
-        }
-      },
-      error: () => { /* SSE errors are handled by EventSource auto-reconnect */ },
-    });
-  }
-
-  private formatStatus(status: string | undefined): string {
-    if (!status) return '';
-    const labels: Record<string, string> = {
-      OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress',
-      RESOLVED: 'Resolved', CLOSED: 'Closed',
-    };
-    return labels[status] ?? status;
+    this.sseSubscription.add(
+      this.sseService.stream<SseEvent>(url, () => this.connectionStatus.set('reconnecting')).subscribe({
+        next: event => {
+          this.connectionStatus.set('connected');
+          if (event.type === 'TICKET_UPDATED' || event.type === 'TICKET_ASSIGNED') {
+            this.refresh();
+            this.showToast(`Ticket #SH-${event.requestId} updated to ${formatStatus(event.detail)}`);
+          }
+          if (event.type === 'SLA_BREACHED') {
+            this.refresh();
+            this.showToast(`Ticket #SH-${event.requestId} SLA breached — priority escalated`);
+          }
+        },
+        error: () => { /* SSE errors are handled by EventSource auto-reconnect */ },
+      })
+    );
   }
 
   private showToast(message: string): void {

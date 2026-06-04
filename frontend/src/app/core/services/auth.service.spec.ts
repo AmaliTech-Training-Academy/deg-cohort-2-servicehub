@@ -121,7 +121,7 @@ describe('AuthService', () => {
       ['MANAGER',  '/dashboard'],
       ['AGENT',    '/agent-dashboard'],
       ['EMPLOYEE', '/my-dashboard'],
-    ] as Array<[string, string]>)('routes %s to %s', (role, route) => {
+    ] as [string, string][])('routes %s to %s', (role, route) => {
       localStorage.setItem('auth_token', makeJwt({ exp: FUTURE_EXP, role }));
       expect(service.getDashboardRoute()).toBe(route);
     });

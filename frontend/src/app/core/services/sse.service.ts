@@ -7,7 +7,8 @@ export interface SseEvent {
   detail: string;
 }
 
-const SSE_EVENT_TYPES = ['TICKET_UPDATED', 'TICKET_ASSIGNED', 'SLA_BREACHED'] as const;
+export const SSE_EVENT_TYPES = ['TICKET_UPDATED', 'TICKET_ASSIGNED', 'SLA_BREACHED'] as const;
+export type SseEventType = typeof SSE_EVENT_TYPES[number];
 
 @Injectable({ providedIn: 'root' })
 export class SseService {
@@ -22,7 +23,7 @@ export class SseService {
    * each type must be registered via addEventListener, which is done here for all
    * known types so callers receive a unified stream and filter by event.type.
    */
-  stream<T = SseEvent>(url: string): Observable<T> {
+  stream<T = SseEvent>(url: string, onConnectionError?: () => void): Observable<T> {
     return new Observable<T>(observer => {
       const source = new EventSource(url);
 
@@ -42,6 +43,7 @@ export class SseService {
       source.onerror = () => {
         // EventSource auto-reconnects — do NOT call observer.error() here
         // as that would terminate the observable and prevent reconnection.
+        onConnectionError?.();
       };
 
       return () => {
