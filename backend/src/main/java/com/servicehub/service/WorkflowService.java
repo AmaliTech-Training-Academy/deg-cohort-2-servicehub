@@ -24,6 +24,7 @@ public class WorkflowService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final SseNotificationService notificationService;
+    private final EmailService emailService;
 
     public ServiceRequest updateStatus(Long id, String newStatus, String agentEmail, String comment) {
         ServiceRequest req = requestRepository.findById(id)
@@ -65,6 +66,11 @@ public class WorkflowService {
             }
         } catch (Exception e) {
             log.warn("SSE notify failed for request {}: {}", saved.getId(), e.getMessage());
+        }
+
+        emailService.sendStatusChangeToRequester(saved.getId(), previous);
+        if (next == RequestStatus.ASSIGNED) {
+            emailService.sendAssignmentNotificationToAgent(saved.getId());
         }
 
         return saved;

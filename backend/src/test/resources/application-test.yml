@@ -21,6 +21,16 @@ spring:
       mode: never
   thymeleaf:
     cache: false
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+
+app:
+  mail:
+    from: test@localhost
+    frontend-url: http://localhost:3000
 
 jwt:
   secret: testSecretKeyForJWTtokenGeneration12345678901234567890
