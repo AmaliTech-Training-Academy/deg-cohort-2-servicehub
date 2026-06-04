@@ -26,7 +26,7 @@ jobs:
 
             export RDS_ENDPOINT=${{ secrets.DEV_RDS_ENDPOINT }}
             export DB_NAME=${{ secrets.DEV_DB_NAME }}
-            export DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
+            export DB_USER=${{ secrets.DEV_DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
             export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
 

@@ -8,8 +8,11 @@ services:
       - disabled
 
   backend:
-    depends_on: {}
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${RDS_ENDPOINT}:5432/${DB_NAME}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
