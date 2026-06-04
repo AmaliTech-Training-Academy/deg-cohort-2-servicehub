@@ -4,6 +4,9 @@ import { LoginComponent } from './features/auth/login/login';
 import { RegisterComponent } from './features/auth/register/register';
 import { DashboardShell } from './features/dashboard/shell/dashboard-shell';
 import { ManagerDashboard } from './features/dashboard/manager/manager-dashboard';
+import { AllTicketsComponent } from './features/dashboard/manager/all-tickets/all-tickets';
+import { SlaPoliciesComponent } from './features/dashboard/manager/sla-policies/sla-policies';
+import { UsersRolesComponent } from './features/dashboard/manager/users/users-roles';
 import { AgentDashboard } from './features/dashboard/agent/agent-dashboard';
 import { EmployeeDashboard } from './features/dashboard/employee/employee-dashboard';
 import { SubmitRequestComponent } from './features/dashboard/submit-request/submit-request';
@@ -22,6 +25,24 @@ export const routes: Routes = [
         component: ManagerDashboard,
         canActivate: [roleGuard('MANAGER')],
         data: { title: 'Dashboard', subtitle: 'Operations overview' },
+      },
+      {
+        path: 'all-tickets',
+        component: AllTicketsComponent,
+        canActivate: [roleGuard('MANAGER')],
+        data: { title: 'All Tickets', subtitle: 'Every department' },
+      },
+      {
+        path: 'sla-policies',
+        component: SlaPoliciesComponent,
+        canActivate: [roleGuard('MANAGER')],
+        data: { title: 'SLA Policies', subtitle: 'Response & resolution targets' },
+      },
+      {
+        path: 'users',
+        component: UsersRolesComponent,
+        canActivate: [roleGuard('MANAGER')],
+        data: { title: 'Users & Roles', subtitle: 'Access control' },
       },
       {
         path: 'agent-dashboard',

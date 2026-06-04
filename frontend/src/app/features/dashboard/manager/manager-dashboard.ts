@@ -66,6 +66,11 @@ export class ManagerDashboard implements OnInit {
 
   /* ── computed ── */
   readonly compliancePct = computed(() => Math.round((this.stats().slaComplianceRate ?? 0) * 100));
+  readonly breachCount = computed(() => {
+    const resolved = this.stats().resolvedRequests ?? 0;
+    const rate = this.stats().slaComplianceRate ?? 0;
+    return Math.round(resolved * (1 - rate));
+  });
   readonly complianceColor = computed(() => {
     const p = this.compliancePct();
     return p >= 80 ? 'var(--teal)' : p >= 60 ? 'var(--amber)' : 'var(--red)';

@@ -7,26 +7,59 @@
   <!-- ── Stat cards ── -->
   <div class="stat-grid">
     <div class="card stat">
-      <div class="stat-k">Total Requests</div>
+      <div class="stat-top">
+        <span class="stat-cap">Total Requests</span>
+        <div class="stat-chip" style="background:#EAF3DE">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2 3h6l2-3h4M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5L5 5Z"/></svg>
+        </div>
+      </div>
       <div class="stat-v">{{ stats().totalRequests }}</div>
-      <div class="stat-d">all time</div>
+      <div class="stat-foot">
+        <span class="dot" style="background:var(--success)"></span>
+        all time
+      </div>
     </div>
+
     <div class="card stat">
-      <div class="stat-k">Open Requests</div>
-      <div class="stat-v">{{ stats().openRequests }}</div>
-      <div class="stat-d">in the queue now</div>
-    </div>
-    <div class="card stat">
-      <div class="stat-k">SLA Compliance</div>
+      <div class="stat-top">
+        <span class="stat-cap">SLA Compliance</span>
+        <div class="stat-chip" [style.background]="compliancePct() >= 80 ? 'var(--success-bg)' : 'var(--danger-bg)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" [attr.stroke]="compliancePct() >= 80 ? 'var(--success)' : 'var(--danger)'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5M12 11a1 1 0 1 0 1 1M21 3l-6 6"/></svg>
+        </div>
+      </div>
       <div class="stat-v" [style.color]="complianceColor()">{{ compliancePct() }}%</div>
-      <div class="stat-d" [class.up]="compliancePct() >= 80" [class.down]="compliancePct() < 80">
+      <div class="stat-foot">
+        <span class="dot" [style.background]="complianceColor()"></span>
         {{ compliancePct() >= 80 ? 'healthy' : 'needs attention' }}
       </div>
     </div>
+
     <div class="card stat">
-      <div class="stat-k">Avg Resolution</div>
+      <div class="stat-top">
+        <span class="stat-cap">SLA Breaches</span>
+        <div class="stat-chip" style="background:var(--warning-bg)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></svg>
+        </div>
+      </div>
+      <div class="stat-v" [style.color]="breachCount() > 0 ? 'var(--danger)' : 'var(--text)'">{{ breachCount() }}</div>
+      <div class="stat-foot">
+        <span class="dot" [style.background]="breachCount() > 0 ? 'var(--danger)' : 'var(--success)'"></span>
+        {{ breachCount() > 0 ? 'review urgently' : 'all on track' }}
+      </div>
+    </div>
+
+    <div class="card stat">
+      <div class="stat-top">
+        <span class="stat-cap">Avg Resolution</span>
+        <div class="stat-chip" style="background:var(--info-bg)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/></svg>
+        </div>
+      </div>
       <div class="stat-v">{{ avgDisplay() }}</div>
-      <div class="stat-d">across resolved tickets</div>
+      <div class="stat-foot">
+        <span class="dot" style="background:var(--info)"></span>
+        across resolved
+      </div>
     </div>
   </div>
 
@@ -38,7 +71,7 @@
         <div class="bar-row">
           <div class="lab">{{ CAT_LABEL[cat] ?? cat }}</div>
           <div class="bar-track">
-            <div class="bar-fill" [style.width]="catWidth(cat)" [style.background]="CAT_COLOR[cat] ?? 'var(--txt-faint)'"></div>
+            <div class="bar-fill" [style.width]="catWidth(cat)" [style.background]="CAT_COLOR[cat] ?? 'var(--text-muted)'"></div>
           </div>
           <div class="num">{{ catCount(cat) }}</div>
         </div>
@@ -47,17 +80,16 @@
 
     <div class="card panel donut-panel">
       <div class="section-h">SLA compliance</div>
-      <svg width="160" height="160" viewBox="0 0 130 130">
-        <circle cx="65" cy="65" r="54" fill="none" stroke="var(--line)" stroke-width="13" />
+      <svg width="160" height="160" viewBox="0 0 130 130" class="donut-svg">
+        <circle cx="65" cy="65" r="54" fill="none" stroke="var(--border)" stroke-width="13" />
         <circle cx="65" cy="65" r="54" fill="none"
           [attr.stroke]="complianceColor()" stroke-width="13" stroke-linecap="round"
           [attr.stroke-dasharray]="donutCirc"
           [attr.stroke-dashoffset]="donutOffset()"
           transform="rotate(-90 65 65)"
           style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)" />
-        <text x="65" y="61" text-anchor="middle"
-          style="font-family:'Bricolage Grotesque';font-size:26px;font-weight:700;fill:var(--txt)">{{ compliancePct() }}%</text>
-        <text x="65" y="80" text-anchor="middle" style="font-size:9px;fill:var(--txt-faint)">on target</text>
+        <text x="65" y="61" text-anchor="middle" class="donut-v">{{ compliancePct() }}%</text>
+        <text x="65" y="80" text-anchor="middle" class="donut-l">ON TARGET</text>
       </svg>
     </div>
   </div>
@@ -70,7 +102,7 @@
         <div class="bar-row">
           <div class="lab"><span class="chip p-{{ p }}">{{ p }}</span></div>
           <div class="bar-track">
-            <div class="bar-fill" [style.width]="prioWidth(p)" [style.background]="PRIO_COLOR[p] ?? 'var(--txt-faint)'"></div>
+            <div class="bar-fill" [style.width]="prioWidth(p)" [style.background]="PRIO_COLOR[p] ?? 'var(--text-muted)'"></div>
           </div>
           <div class="num">{{ prioCount(p) }}</div>
         </div>
@@ -102,17 +134,16 @@
           <svg viewBox="0 0 460 130" class="trend-svg" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="mgr-trend-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22" />
-                <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+                <stop offset="0%" stop-color="var(--orange)" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="var(--orange)" stop-opacity="0" />
               </linearGradient>
             </defs>
             <path [attr.d]="trendAreaPath()" fill="url(#mgr-trend-grad)" />
-            <path [attr.d]="trendLinePath()" fill="none" stroke="var(--accent)"
+            <path [attr.d]="trendLinePath()" fill="none" stroke="var(--orange)"
               stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
             @for (pt of trendPts(); track pt.label) {
               <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.2"
-                fill="var(--paper-2)" stroke="var(--accent)" stroke-width="2" />
-              <!-- invisible larger hit area for easier hover -->
+                fill="var(--surface)" stroke="var(--orange)" stroke-width="2" />
               <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="10"
                 fill="transparent"
                 aria-describedby="trend-tooltip"
@@ -122,7 +153,6 @@
                 (touchend)="hoveredPt.set(null)" />
             }
           </svg>
-
           @if (hoveredPt()) {
             <div class="trend-tooltip"
               id="trend-tooltip"
@@ -135,7 +165,6 @@
             </div>
           }
         </div>
-
         <div class="trend-x">
           @for (day of trendDays(); track day.label) {
             <span>{{ day.label }}</span>

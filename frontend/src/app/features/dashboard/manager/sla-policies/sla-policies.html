@@ -1,0 +1,41 @@
+@if (loading()) {
+  <p class="note" style="padding:40px 0">Loading SLA policies…</p>
+} @else if (error()) {
+  <p class="form-err">{{ error() }}</p>
+} @else {
+  <p class="page-intro">
+    These targets define the maximum time allowed to <b>respond</b> and <b>resolve</b> each ticket by priority.
+    SLA compliance is tracked against these thresholds automatically.
+  </p>
+
+  <div class="card data-list sla-table">
+    <div class="dl-head" role="row">
+      <div>Priority</div>
+      <div>Respond within</div>
+      <div>Resolve within</div>
+      <div>Typical use</div>
+    </div>
+    @for (p of sortedPolicies(); track p.id) {
+      <div class="dl-row static" role="row">
+        <div data-h="Priority"><span class="chip p-{{ p.priority }}">{{ p.priority }}</span></div>
+        <div class="mono" data-h="Respond">{{ p.responseTimeHours === 0 ? 'Immediately' : p.responseTimeHours + 'h' }}</div>
+        <div class="mono" data-h="Resolve">{{ p.resolutionTimeHours }}h</div>
+        <div class="note" data-h="Use">{{ PRIO_USE[p.priority] }}</div>
+      </div>
+    }
+  </div>
+
+  <!-- Auto-routing map -->
+  <div class="card panel route-card">
+    <div class="section-h">Auto-routing map</div>
+    <p class="note route-intro">A request's category determines its department with zero manual assignment.</p>
+    @for (r of DEPT_ROUTING; track r.cat) {
+      <div class="route-line">
+        <span class="cat-tag">{{ CAT_LABEL[r.cat] ?? r.cat }}</span>
+        <svg class="ic route-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <b>{{ r.dept }}</b>
+        <span class="route-email mono">{{ r.email }}</span>
+      </div>
+    }
+  </div>
+}
