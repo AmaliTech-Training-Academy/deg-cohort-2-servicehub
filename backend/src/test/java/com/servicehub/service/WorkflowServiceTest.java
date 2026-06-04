@@ -12,6 +12,7 @@ import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.SseNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +38,7 @@ class WorkflowServiceTest {
     @Mock private ServiceRequestRepository requestRepository;
     @Mock private UserRepository userRepository;
     @Mock private CommentRepository commentRepository;
+    @Mock private SseNotificationService notificationService;
 
     @InjectMocks private WorkflowService workflowService;
 
@@ -166,6 +169,45 @@ class WorkflowServiceTest {
     // -----------------------------------------------------------------------
     // validateTransition — all invalid paths
     // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // SSE notification wiring (UC-08 + SSE feature #94)
+    // Verifies notify() is called so status transitions propagate to connected clients.
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updateStatus_notifiesRequesterWithTicketUpdatedEvent() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
+
+        verify(notificationService).notify(
+                eq(openRequest.getRequester().getId()),
+                eq(SseNotificationService.EVENT_TICKET_UPDATED),
+                eq(1L),
+                any());
+    }
+
+    @Test
+    void updateStatus_openToAssigned_alsoNotifiesAssignedAgent() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(openRequest));
+        when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+        when(requestRepository.save(any())).thenAnswer(inv -> {
+            ServiceRequest saved = inv.getArgument(0);
+            saved.setAssignedTo(agent);
+            return saved;
+        });
+
+        workflowService.updateStatus(1L, "ASSIGNED", "agent@test.com", null);
+
+        verify(notificationService).notify(
+                eq(agent.getId()),
+                eq(SseNotificationService.EVENT_TICKET_ASSIGNED),
+                eq(1L),
+                any());
+    }
 
     @ParameterizedTest
     @CsvSource({
