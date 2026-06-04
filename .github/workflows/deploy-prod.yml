@@ -6,33 +6,90 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to PRODUCTION
+    name: Deploy to ECS (Fargate)
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
-      - uses: appleboy/ssh-action@v1
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.PROD_SERVER_HOST }}
-          username: ${{ secrets.PROD_SERVER_USER }}
-          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
-          script: |
-            cd /opt/app
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
 
-            ROLLBACK_SHA=$(git rev-parse HEAD)
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-            git fetch origin
-            git checkout main
-            git pull origin main
-            docker compose -f docker-compose.yml up -d --build
-            docker system prune -f
-            sleep 10
+      # ── Backend ──────────────────────────────────────────────────────────────
+      - name: Build and push backend image
+        id: backend_image
+        run: |
+          IMAGE=${{ secrets.PROD_ECR_BACKEND_URL }}:${{ github.sha }}
+          docker build -t $IMAGE ./backend
+          docker push $IMAGE
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
-            if ! curl -f http://localhost:8080/actuator/health; then
-              echo "Health check failed — rolling back to $ROLLBACK_SHA"
-              git checkout $ROLLBACK_SHA
-              docker compose -f docker-compose.yml up -d --build
-              echo "Rollback complete"
-              exit 1
-            fi
+      - name: Update backend task definition
+        id: backend_task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: servicehub-prod-backend
+          container-name: backend
+          image: ${{ steps.backend_image.outputs.image }}
 
-            docker compose ps
+      - name: Deploy backend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.backend_task.outputs.task-definition }}
+          service: ${{ secrets.PROD_ECS_BACKEND_SERVICE }}
+          cluster: ${{ secrets.PROD_ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # ── Frontend ─────────────────────────────────────────────────────────────
+      - name: Build and push frontend image
+        id: frontend_image
+        run: |
+          IMAGE=${{ secrets.PROD_ECR_FRONTEND_URL }}:${{ github.sha }}
+          docker build -t $IMAGE ./frontend
+          docker push $IMAGE
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Update frontend task definition
+        id: frontend_task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: servicehub-prod-frontend
+          container-name: frontend
+          image: ${{ steps.frontend_image.outputs.image }}
+
+      - name: Deploy frontend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.frontend_task.outputs.task-definition }}
+          service: ${{ secrets.PROD_ECS_FRONTEND_SERVICE }}
+          cluster: ${{ secrets.PROD_ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Notify on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"CI Alerts <onboarding@resend.dev>\",
+              \"to\": [\"$MAIL_TO\"],
+              \"subject\": \"Deploy to PRODUCTION failed\",
+              \"text\": \"Production deployment to ECS failed.\nCommit: ${{ github.sha }}\nTriggered by: ${{ github.actor }}\nView run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            }"
