@@ -2,28 +2,29 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DashboardService, ServiceRequestResponse } from '../../../core/services/dashboard.service';
-import { SlaBadge } from '../../../shared/components/sla-badge/sla-badge';
+import { PriorityChipComponent } from '../../../shared/components/priority-chip/priority-chip';
+import { StatusDotComponent } from '../../../shared/components/status-dot/status-dot';
+import { SlaTagComponent } from '../../../shared/components/sla-tag/sla-tag';
+import { TicketDetailComponent } from '../agent/ticket-detail/ticket-detail';
 
 @Component({
   selector: 'app-employee-dashboard',
-  imports: [FormsModule, SlaBadge],
+  imports: [FormsModule, PriorityChipComponent, StatusDotComponent, SlaTagComponent, TicketDetailComponent],
   templateUrl: './employee-dashboard.html',
 })
 export class EmployeeDashboard implements OnInit {
   private dashboardService = inject(DashboardService);
   private router = inject(Router);
 
+  readonly requests = signal<ServiceRequestResponse[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly requests = signal<ServiceRequestResponse[]>([]);
+  readonly selectedRequest = signal<ServiceRequestResponse | null>(null);
 
-  statusFilter = signal('ALL');
-  prioFilter = signal('ALL');
+  readonly statusFilter = signal('ALL');
+  readonly prioFilter = signal('ALL');
 
-  readonly STATUS_LABEL: Record<string, string> = {
-    OPEN: 'Open', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed',
-  };
-  readonly CAT_LABEL: Record<string, string> = {
+  readonly CAT_LABEL: Partial<Record<string, string>> = {
     IT_SUPPORT: 'IT Support', FACILITIES: 'Facilities', HR_REQUEST: 'HR Request',
   };
 
@@ -42,7 +43,19 @@ export class EmployeeDashboard implements OnInit {
       next: p => { this.requests.set(p.content); this.loading.set(false); },
       error: () => { this.error.set('Failed to load your requests.'); this.loading.set(false); },
     });
+
+    // TODO: connect to GET /api/notifications/stream?token=<jwt> via EventSource once the
+    // backend SSE endpoint is implemented. On receiving a TICKET_UPDATED event whose
+    // requestId matches one of this user's requests, re-call getMyRequests() to refresh
+    // the list automatically without requiring a page reload.
   }
+
+  openDetail(id: number): void {
+    const r = this.requests().find(x => x.id === id);
+    if (r) this.selectedRequest.set(r);
+  }
+
+  closeDetail(): void { this.selectedRequest.set(null); }
 
   clearFilters(): void { this.statusFilter.set('ALL'); this.prioFilter.set('ALL'); }
 
