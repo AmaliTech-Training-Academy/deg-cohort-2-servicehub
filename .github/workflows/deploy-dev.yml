@@ -70,7 +70,7 @@ jobs:
               docker login --username AWS --password-stdin ${{ secrets.PROD_ECR_BACKEND_URL }}
 
             docker compose -f docker-compose.yml -f docker-compose.aws.yml pull
-            docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d
+            docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --no-build
 
             docker system prune -f
             sleep 45
@@ -80,7 +80,7 @@ jobs:
               export BACKEND_IMAGE=${{ secrets.PROD_ECR_BACKEND_URL }}:${ROLLBACK_SHA}
               export FRONTEND_IMAGE=${{ secrets.PROD_ECR_FRONTEND_URL }}:${ROLLBACK_SHA}
               docker compose -f docker-compose.yml -f docker-compose.aws.yml pull
-              docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d
+              docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --no-build
               echo "Rollback complete"
               exit 1
             fi
