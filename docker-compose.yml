@@ -50,9 +50,32 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-4200}:80"
+    volumes:
+      - ./frontend/nginx-ec2.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
+    networks:
+      - app-network
+
+  data-engineering:
+    build:
+      context: ./data-engineering
+      dockerfile: Dockerfile
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./data-engineering/output:/app/output
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - app-network
 

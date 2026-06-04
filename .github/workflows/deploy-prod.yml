@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to ECS (Fargate)
+    name: Promote dev image and deploy to ECS
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -24,25 +24,50 @@ jobs:
           aws-region: eu-west-1
 
       - name: Login to ECR
-        id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ── Backend ──────────────────────────────────────────────────────────────
-      - name: Build and push backend image
-        id: backend_image
+      # ── Promote dev-latest → prod-latest (no rebuild) ────────────────────────
+      - name: Promote backend image
         run: |
-          IMAGE=${{ secrets.PROD_ECR_BACKEND_URL }}:${{ github.sha }}
-          docker build -t $IMAGE ./backend
-          docker push $IMAGE
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_BACKEND_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_BACKEND_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
 
+      - name: Promote frontend image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_FRONTEND_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_FRONTEND_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
+      - name: Promote ETL image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
+      # ── Deploy promoted image to ECS ─────────────────────────────────────────
       - name: Update backend task definition
         id: backend_task
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition-family: servicehub-prod-backend
           container-name: backend
-          image: ${{ steps.backend_image.outputs.image }}
+          image: ${{ secrets.PROD_ECR_BACKEND_URL }}:prod-latest
 
       - name: Deploy backend to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -52,22 +77,13 @@ jobs:
           cluster: ${{ secrets.PROD_ECS_CLUSTER }}
           wait-for-service-stability: true
 
-      # ── Frontend ─────────────────────────────────────────────────────────────
-      - name: Build and push frontend image
-        id: frontend_image
-        run: |
-          IMAGE=${{ secrets.PROD_ECR_FRONTEND_URL }}:${{ github.sha }}
-          docker build -t $IMAGE ./frontend
-          docker push $IMAGE
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-
       - name: Update frontend task definition
         id: frontend_task
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition-family: servicehub-prod-frontend
           container-name: frontend
-          image: ${{ steps.frontend_image.outputs.image }}
+          image: ${{ secrets.PROD_ECR_FRONTEND_URL }}:prod-latest
 
       - name: Deploy frontend to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
