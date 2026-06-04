@@ -26,16 +26,19 @@ jobs:
 
             export RDS_ENDPOINT=${{ secrets.DEV_RDS_ENDPOINT }}
             export DB_NAME=${{ secrets.DEV_DB_NAME }}
-            export DB_USER=${{ secrets.DEV_DB_USERNAME }}
+            export DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
             export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+
+            printf "DB_URL=jdbc:postgresql://%s:5432/%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nJWT_SECRET=%s\nJWT_EXPIRATION_MS=86400000\nSPRING_PROFILES_ACTIVE=prod\nBACKEND_PORT=8080\nFRONTEND_PORT=3000\n" \
+              "${RDS_ENDPOINT}" "${DB_NAME}" "${DB_NAME}" "${DB_USERNAME}" "${DB_PASSWORD}" "${JWT_SECRET}" > /opt/app/.env
 
             docker compose -f docker-compose.yml \
                            -f docker-compose.aws.yml \
                            up -d --build
 
             docker system prune -f
-            sleep 15
+            sleep 45
 
             if ! curl -sf http://localhost:8080/actuator/health; then
               echo "Health check failed — rolling back to $ROLLBACK_SHA"
