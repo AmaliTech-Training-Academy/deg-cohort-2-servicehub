@@ -1,0 +1,6 @@
+region      = "eu-west-1"
+key_name    = "your-key-pair-name"
+db_name     = "servicehub"
+db_username = "servicehub"
+db_password = "change-me-strong-password"
+jwt_secret  = "change-me-jwt-secret-minimum-32-chars"
