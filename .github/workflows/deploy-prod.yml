@@ -49,6 +49,17 @@ jobs:
             --image-tag prod-latest \
             --image-manifest "$MANIFEST"
 
+      - name: Promote ETL image
+        run: |
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-ids imageTag=dev-latest \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $(echo ${{ secrets.PROD_ECR_ETL_URL }} | cut -d'/' -f2) \
+            --image-tag prod-latest \
+            --image-manifest "$MANIFEST"
+
       # ── Deploy promoted image to ECS ─────────────────────────────────────────
       - name: Update backend task definition
         id: backend_task
