@@ -2,6 +2,7 @@ package com.amalitech.qa.pages;
 
 import com.amalitech.qa.config.TestConfig;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
 /** Page Object for /my-dashboard (EMPLOYEE view). */
@@ -18,11 +19,13 @@ public class EmployeeDashboardPage extends BasePage {
 
     public boolean isLoaded() {
         waitForUrl(ROUTE);
+        waitVisible(By.cssSelector("div.nm"));
         return isOnPage(ROUTE);
     }
 
     public void logout() {
-        waitClickable(LOGOUT_BTN).click();
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click()", waitClickable(LOGOUT_BTN));
     }
 
     public void navigateTo() {
