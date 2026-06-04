@@ -38,6 +38,7 @@ class WorkflowServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private CommentRepository commentRepository;
     @Mock private SseNotificationService notificationService;
+    @Mock private EmailService emailService;
 
     @InjectMocks private WorkflowService workflowService;
 
