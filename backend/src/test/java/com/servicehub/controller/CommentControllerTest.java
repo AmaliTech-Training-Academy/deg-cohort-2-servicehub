@@ -6,8 +6,7 @@ import com.servicehub.dto.CommentResponse;
 import com.servicehub.exception.ForbiddenException;
 import com.servicehub.exception.NotFoundException;
 import com.servicehub.service.CommentService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.servicehub.support.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -17,8 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,19 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class CommentControllerTest {
 
-    private static final String JWT_SECRET = "test-secret-key-for-testing-purposes-only-minimum-32-chars";
-
     @Autowired private MockMvc mockMvc;
     @MockBean  private CommentService commentService;
-
-    private String token(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder().subject(email).claim("role", role).signWith(key).compact();
-    }
-
-    private String agentToken()    { return token("agent@test.com", "AGENT"); }
-    private String employeeToken() { return token("emp@test.com", "EMPLOYEE"); }
-    private String managerToken()  { return token("mgr@test.com", "MANAGER"); }
 
     private CommentResponse sampleResponse() {
         return CommentResponse.builder()
@@ -54,10 +40,10 @@ class CommentControllerTest {
 
     @Test
     void addComment_asAgent_returns201() throws Exception {
-        when(commentService.addComment(eq(1L), any(), eq("agent@test.com"))).thenReturn(sampleResponse());
+        when(commentService.addComment(eq(1L), any(), eq("agt@test.com"))).thenReturn(sampleResponse());
 
         mockMvc.perform(post("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + agentToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"Looking into this\"}"))
                 .andExpect(status().isCreated())
@@ -73,7 +59,7 @@ class CommentControllerTest {
         when(commentService.addComment(eq(1L), any(), eq("emp@test.com"))).thenReturn(resp);
 
         mockMvc.perform(post("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"Any update?\"}"))
                 .andExpect(status().isCreated())
@@ -91,7 +77,7 @@ class CommentControllerTest {
     @Test
     void addComment_asManager_returns403() throws Exception {
         mockMvc.perform(post("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + managerToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"hello\"}"))
                 .andExpect(status().isForbidden());
@@ -100,7 +86,7 @@ class CommentControllerTest {
     @Test
     void addComment_blankBody_returns400() throws Exception {
         mockMvc.perform(post("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + agentToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"\"}"))
                 .andExpect(status().isBadRequest())
@@ -113,7 +99,7 @@ class CommentControllerTest {
                 .thenThrow(new ForbiddenException("Employees can only comment on their own requests"));
 
         mockMvc.perform(post("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + employeeToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"sneaky\"}"))
                 .andExpect(status().isForbidden())
@@ -126,7 +112,7 @@ class CommentControllerTest {
                 .thenThrow(new NotFoundException("Request not found"));
 
         mockMvc.perform(post("/api/requests/99/comments")
-                        .header("Authorization", "Bearer " + agentToken())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"body\":\"hello\"}"))
                 .andExpect(status().isNotFound())
@@ -145,7 +131,7 @@ class CommentControllerTest {
         when(commentService.getComments(1L)).thenReturn(List.of(sys, user));
 
         mockMvc.perform(get("/api/requests/1/comments")
-                        .header("Authorization", "Bearer " + agentToken()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].systemGenerated").value(true))
                 .andExpect(jsonPath("$[0].body").value("[OPEN → ASSIGNED] On it"))

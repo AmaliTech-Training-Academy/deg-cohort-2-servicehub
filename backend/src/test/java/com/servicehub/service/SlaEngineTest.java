@@ -1,11 +1,10 @@
 package com.servicehub.service;
 
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.model.User;
 import com.servicehub.model.enums.Priority;
 import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
-import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -101,13 +100,10 @@ class SlaEngineTest {
     }
 
     private ServiceRequest buildRequest(Priority priority, boolean alreadyBreached) {
-        User requester = User.builder()
-                .id(1L).email("user@test.com").fullName("Test User").role(Role.EMPLOYEE)
-                .build();
         ServiceRequest req = ServiceRequest.builder()
                 .id(1L).title("Overdue request").description("Test")
                 .category(RequestCategory.IT_SUPPORT).priority(priority)
-                .status(RequestStatus.IN_PROGRESS).requester(requester)
+                .status(RequestStatus.IN_PROGRESS).requester(UserFixtures.employee())
                 .slaDeadline(LocalDateTime.now().minusHours(1))
                 .createdAt(LocalDateTime.now().minusHours(5))
                 .updatedAt(LocalDateTime.now())
