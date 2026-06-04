@@ -4,8 +4,7 @@ import com.servicehub.config.CorsConfig;
 import com.servicehub.config.SecurityConfig;
 import com.servicehub.dto.DashboardStatsResponse;
 import com.servicehub.service.DashboardService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.servicehub.support.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,8 +13,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -36,19 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class DashboardControllerTest {
 
-    private static final String SECRET = "test-secret-key-for-testing-purposes-only-minimum-32-chars";
-
     @Autowired MockMvc mockMvc;
     @MockBean  DashboardService dashboardService;
-
-    private String token(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder().subject(email).claim("role", role).signWith(key).compact();
-    }
-
-    private String manager()  { return token("mgr@test.com",   "MANAGER");  }
-    private String agent()    { return token("agt@test.com",   "AGENT");    }
-    private String employee() { return token("emp@test.com",   "EMPLOYEE"); }
 
     private DashboardStatsResponse emptyStats() {
         return DashboardStatsResponse.builder()
@@ -64,7 +50,7 @@ class DashboardControllerTest {
     void stats_asManager_returns200() throws Exception {
         when(dashboardService.getStats()).thenReturn(emptyStats());
         mockMvc.perform(get("/api/dashboard/stats")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk());
     }
 
@@ -72,14 +58,14 @@ class DashboardControllerTest {
     void stats_asAgent_returns200() throws Exception {
         when(dashboardService.getStats()).thenReturn(emptyStats());
         mockMvc.perform(get("/api/dashboard/stats")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void stats_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/stats")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -95,21 +81,21 @@ class DashboardControllerTest {
     void sla_asManager_returns200() throws Exception {
         when(dashboardService.getSlaStats()).thenReturn(Map.of("IT_SUPPORT", 0.95));
         mockMvc.perform(get("/api/dashboard/sla")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void sla_asAgent_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/sla")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void sla_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/sla")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -119,7 +105,7 @@ class DashboardControllerTest {
     void trends_asManager_returns200() throws Exception {
         when(dashboardService.getDailyVolumeTrend(7)).thenReturn(Map.of("2026-06-01", 3L));
         mockMvc.perform(get("/api/dashboard/trends")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk());
     }
 
@@ -127,14 +113,14 @@ class DashboardControllerTest {
     void trends_asAgent_returns200() throws Exception {
         when(dashboardService.getDailyVolumeTrend(7)).thenReturn(Map.of());
         mockMvc.perform(get("/api/dashboard/trends")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void trends_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/trends")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -144,21 +130,21 @@ class DashboardControllerTest {
     void agents_asManager_returns200() throws Exception {
         when(dashboardService.getAgentStats()).thenReturn(List.of());
         mockMvc.perform(get("/api/dashboard/agents")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void agents_asAgent_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/agents")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void agents_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/dashboard/agents")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 }

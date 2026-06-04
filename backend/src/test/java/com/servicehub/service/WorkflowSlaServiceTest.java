@@ -4,6 +4,7 @@ import com.servicehub.dto.ServiceRequestDto;
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.dto.StatusUpdateRequest;
 import com.servicehub.exception.InvalidStatusTransitionException;
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.model.*;
 import com.servicehub.model.enums.*;
 import com.servicehub.repository.*;
@@ -40,9 +41,9 @@ class WorkflowSlaServiceTest {
 
     @BeforeEach
     void setUp() {
-        employee  = User.builder().id(1L).email("user@test.com").fullName("Test User").role(Role.EMPLOYEE).build();
-        agent     = User.builder().id(2L).email("agent@test.com").fullName("Agent One").role(Role.AGENT).build();
-        manager   = User.builder().id(3L).email("mgr@test.com").fullName("Manager").role(Role.MANAGER).build();
+        employee  = UserFixtures.employee();
+        agent     = UserFixtures.agent();
+        manager   = UserFixtures.manager();
         highPolicy = SlaPolicy.builder().id(1L).priority(Priority.HIGH)
                 .responseTimeHours(1).resolutionTimeHours(4).build();
         itDept    = Department.builder().id(1L).name("IT Support").category(RequestCategory.IT_SUPPORT).build();

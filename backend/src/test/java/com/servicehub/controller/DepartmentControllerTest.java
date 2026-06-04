@@ -4,8 +4,7 @@ import com.servicehub.config.CorsConfig;
 import com.servicehub.config.SecurityConfig;
 import com.servicehub.model.Department;
 import com.servicehub.repository.DepartmentRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.servicehub.support.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -15,8 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,19 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class DepartmentControllerTest {
 
-    private static final String SECRET = "test-secret-key-for-testing-purposes-only-minimum-32-chars";
-
     @Autowired MockMvc mockMvc;
     @MockBean  DepartmentRepository departmentRepository;
-
-    private String token(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder().subject(email).claim("role", role).signWith(key).compact();
-    }
-
-    private String manager()  { return token("mgr@test.com",  "MANAGER");  }
-    private String agent()    { return token("agt@test.com",  "AGENT");    }
-    private String employee() { return token("emp@test.com",  "EMPLOYEE"); }
 
     private Department sampleDept() {
         Department d = new Department();
@@ -76,7 +62,7 @@ class DepartmentControllerTest {
     void getAll_asEmployee_returns200() throws Exception {
         when(departmentRepository.findByIsActiveTrue()).thenReturn(List.of(sampleDept()));
         mockMvc.perform(get("/api/departments")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isOk());
     }
 
@@ -86,7 +72,7 @@ class DepartmentControllerTest {
     void getById_asAgent_returns200() throws Exception {
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(sampleDept()));
         mockMvc.perform(get("/api/departments/1")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isOk());
     }
 
@@ -94,7 +80,7 @@ class DepartmentControllerTest {
     void getById_notFound_returns404() throws Exception {
         when(departmentRepository.findById(99L)).thenReturn(Optional.empty());
         mockMvc.perform(get("/api/departments/99")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isNotFound());
     }
 
@@ -104,7 +90,7 @@ class DepartmentControllerTest {
     void create_asManager_returns200() throws Exception {
         when(departmentRepository.save(any())).thenReturn(sampleDept());
         mockMvc.perform(post("/api/departments")
-                        .header("Authorization", "Bearer " + manager())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Legal\",\"category\":\"HR_REQUEST\",\"contactEmail\":\"legal@test.com\"}"))
                 .andExpect(status().isOk());
@@ -113,7 +99,7 @@ class DepartmentControllerTest {
     @Test
     void create_asAgent_returns403() throws Exception {
         mockMvc.perform(post("/api/departments")
-                        .header("Authorization", "Bearer " + agent())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Legal\"}"))
                 .andExpect(status().isForbidden());
@@ -122,7 +108,7 @@ class DepartmentControllerTest {
     @Test
     void create_asEmployee_returns403() throws Exception {
         mockMvc.perform(post("/api/departments")
-                        .header("Authorization", "Bearer " + employee())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Legal\"}"))
                 .andExpect(status().isForbidden());
@@ -142,14 +128,14 @@ class DepartmentControllerTest {
     void delete_asManager_returns204() throws Exception {
         when(departmentRepository.existsById(1L)).thenReturn(true);
         mockMvc.perform(delete("/api/departments/1")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void delete_asAgent_returns403() throws Exception {
         mockMvc.perform(delete("/api/departments/1")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isForbidden());
     }
 }

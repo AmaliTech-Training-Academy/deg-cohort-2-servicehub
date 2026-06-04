@@ -5,8 +5,7 @@ import com.servicehub.config.SecurityConfig;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.SlaService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.servicehub.support.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,8 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -42,20 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.secret=test-secret-key-for-testing-purposes-only-minimum-32-chars")
 class SlaControllerTest {
 
-    private static final String SECRET = "test-secret-key-for-testing-purposes-only-minimum-32-chars";
-
     @Autowired MockMvc mockMvc;
     @MockBean  SlaService slaService;
     @MockBean  ServiceRequestService serviceRequestService;
-
-    private String token(String email, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder().subject(email).claim("role", role).signWith(key).compact();
-    }
-
-    private String manager()  { return token("mgr@test.com", "MANAGER");  }
-    private String agent()    { return token("agt@test.com", "AGENT");    }
-    private String employee() { return token("emp@test.com", "EMPLOYEE"); }
 
     // ── GET /api/sla/breaches ─────────────────────────────────────────────────
 
@@ -63,21 +49,21 @@ class SlaControllerTest {
     void breaches_asManager_returns200() throws Exception {
         when(slaService.getAllBreaches()).thenReturn(List.of());
         mockMvc.perform(get("/api/sla/breaches")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void breaches_asAgent_returns403() throws Exception {
         mockMvc.perform(get("/api/sla/breaches")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void breaches_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/sla/breaches")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -96,7 +82,7 @@ class SlaControllerTest {
         when(slaService.getAllPolicies()).thenReturn(List.of(policy));
 
         mockMvc.perform(get("/api/sla/policies")
-                        .header("Authorization", "Bearer " + manager()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].responseTimeHours").value(2));
     }
@@ -104,14 +90,14 @@ class SlaControllerTest {
     @Test
     void policies_asAgent_returns403() throws Exception {
         mockMvc.perform(get("/api/sla/policies")
-                        .header("Authorization", "Bearer " + agent()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void policies_asEmployee_returns403() throws Exception {
         mockMvc.perform(get("/api/sla/policies")
-                        .header("Authorization", "Bearer " + employee()))
+                        .header("Authorization", "Bearer " + JwtTokenFactory.employeeToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -124,7 +110,7 @@ class SlaControllerTest {
         when(slaService.updatePolicy(eq(1L), any(), any())).thenReturn(updated);
 
         mockMvc.perform(put("/api/sla/policies/1")
-                        .header("Authorization", "Bearer " + manager())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.managerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"responseTimeHours\":3,\"resolutionTimeHours\":12}"))
                 .andExpect(status().isOk())
@@ -134,7 +120,7 @@ class SlaControllerTest {
     @Test
     void updatePolicy_asAgent_returns403() throws Exception {
         mockMvc.perform(put("/api/sla/policies/1")
-                        .header("Authorization", "Bearer " + agent())
+                        .header("Authorization", "Bearer " + JwtTokenFactory.agentToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"responseTimeHours\":3,\"resolutionTimeHours\":12}"))
                 .andExpect(status().isForbidden());

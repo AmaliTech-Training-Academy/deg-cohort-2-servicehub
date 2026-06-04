@@ -2,13 +2,12 @@ package com.servicehub.service;
 
 import com.servicehub.exception.InvalidStatusTransitionException;
 import com.servicehub.exception.NotFoundException;
+import com.servicehub.fixtures.ServiceRequestFixtures;
+import com.servicehub.fixtures.UserFixtures;
 import com.servicehub.model.Comment;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
-import com.servicehub.model.enums.Priority;
-import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
-import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.CommentRepository;
 import com.servicehub.repository.UserRepository;
@@ -47,18 +46,8 @@ class WorkflowServiceTest {
 
     @BeforeEach
     void setUp() {
-        agent = User.builder().id(1L).email("agent@test.com")
-                .fullName("Test Agent").role(Role.AGENT).password("pass").build();
-
-        openRequest = ServiceRequest.builder()
-                .id(1L).title("Fix printer")
-                .category(RequestCategory.IT_SUPPORT).priority(Priority.HIGH)
-                .status(RequestStatus.OPEN)
-                .requester(User.builder().id(2L).email("emp@test.com")
-                        .fullName("Employee").role(Role.EMPLOYEE).password("pass").build())
-                .createdAt(LocalDateTime.now().minusHours(1))
-                .updatedAt(LocalDateTime.now().minusHours(1))
-                .build();
+        agent       = UserFixtures.agent();
+        openRequest = ServiceRequestFixtures.openRequest(UserFixtures.employee());
     }
 
     // -----------------------------------------------------------------------
