@@ -5,30 +5,22 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
-/** Page Object for /my-dashboard (EMPLOYEE view). */
 public class EmployeeDashboardPage extends BasePage {
 
     private static final String ROUTE = "/my-dashboard";
+    private static final By LOGOUT_BTN = By.cssSelector(".side-foot button");
 
-    /** Logout button — SVG-icon only (no text). Class from dashboard-shell.html. */
-    private static final By LOGOUT_BTN = By.cssSelector("button.who-logout");
-
-    public EmployeeDashboardPage(WebDriver driver) {
-        super(driver);
-    }
+    public EmployeeDashboardPage(WebDriver driver) { super(driver); }
 
     public boolean isLoaded() {
         waitForUrl(ROUTE);
-        waitVisible(By.cssSelector("div.nm"));
+        waitVisible(By.cssSelector("div.topbar"));
         return isOnPage(ROUTE);
     }
 
     public void logout() {
-        ((JavascriptExecutor) driver)
-                .executeScript("arguments[0].click()", waitClickable(LOGOUT_BTN));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click()", waitClickable(LOGOUT_BTN));
     }
 
-    public void navigateTo() {
-        driver.get(TestConfig.BASE_URL + ROUTE);
-    }
+    public void navigateTo() { driver.get(TestConfig.BASE_URL + ROUTE); }
 }
