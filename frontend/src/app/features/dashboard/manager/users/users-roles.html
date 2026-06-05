@@ -1,0 +1,73 @@
+@if (loading()) {
+  <p class="note" style="padding:40px 0">Loading users…</p>
+} @else if (error()) {
+  <p class="form-err">{{ error() }}</p>
+} @else {
+  <p class="page-intro">
+    Verify and grant access. Promote a registered user to <b>Agent</b> to let them resolve tickets
+    in their department's queue. New users always start as Employees; the Manager role is fixed.
+  </p>
+
+  <div class="card data-list users-table">
+    <div class="dl-head" role="row">
+      <div>Name</div><div>Role</div><div>Access</div><div>Action</div>
+    </div>
+    @for (u of users(); track u.id) {
+      <div class="dl-row static" role="row">
+        <div class="u-name" data-h="Name">
+          <div class="avatar" style="width:34px;height:34px;font-size:13px;background:var(--navy-2)">{{ initials(u.fullName) }}</div>
+          <div class="u-id">
+            <b>
+              {{ u.fullName }}
+              @if (u.email === currentEmail) {
+                <span class="you-tag">You</span>
+              }
+            </b>
+            <span class="u-email">{{ u.email }}</span>
+          </div>
+        </div>
+        <div data-h="Role">
+          <span class="chip {{ ROLE_CHIP[u.role] }}">{{ u.role }}</span>
+        </div>
+        <div class="note" data-h="Access">{{ scope(u) }}</div>
+        <div data-h="Action">
+          @if (u.role === 'EMPLOYEE') {
+            <button class="btn btn-ghost btn-sm" (click)="confirmPromote(u)">
+              <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Promote to Agent
+            </button>
+          } @else {
+            <span class="action-locked">{{ u.role === 'MANAGER' ? 'Fixed role' : 'Active agent' }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Promote confirmation modal -->
+@if (pending()) {
+  <div class="modal-scrim"
+    role="button" tabindex="0" aria-label="Close dialog"
+    (click)="onScrimClick($event)"
+    (keydown.escape)="cancelPromote()"
+    (keydown.enter)="cancelPromote()">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6l-8-3ZM9 12l2 2 4-4"/></svg>
+      </div>
+      <h3>Promote {{ pending()!.fullName }} to Agent?</h3>
+      <p>
+        They'll gain access to agent tools — picking up and resolving tickets routed to their department.
+      </p>
+      <p class="modal-fine">Their account details and request history are kept. This cannot be undone from here.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" (click)="cancelPromote()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="promoting()" (click)="promote()">
+          <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          {{ promoting() ? 'Promoting…' : 'Promote to Agent' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
