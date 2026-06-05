@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Orange rounded square background -->
+  <rect width="32" height="32" rx="6" fill="#FF5A00"/>
+  <!-- Headset icon in white -->
+  <g transform="translate(4, 4)" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 10v-.6a10 10 0 0 1 20 0V10"/>
+    <path d="M2 10h2a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-5.4Z"/>
+    <path d="M22 10h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-5.4Z"/>
+    <path d="M20 17a4 4 0 0 1-4 4h-3"/>
+  </g>
+</svg>

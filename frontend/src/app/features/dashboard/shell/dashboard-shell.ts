@@ -14,10 +14,9 @@ const NAV: Record<string, NavItem[]> = {
     { icon: 'inbox',  label: 'Department Queue', route: '/agent-dashboard' },
   ],
   MANAGER: [
-    { icon: 'chart', label: 'Dashboard',       route: '/dashboard' },
-    { icon: 'grid',  label: 'All Tickets',     route: '/all-tickets' },
-    { icon: 'clock', label: 'SLA Policies',    route: '/sla-policies' },
-    { icon: 'users', label: 'Users & Roles',   route: '/users' },
+    { icon: 'chart', label: 'Dashboard',    route: '/dashboard' },
+    { icon: 'grid',  label: 'All Tickets',  route: '/all-tickets' },
+    { icon: 'clock', label: 'SLA Policies', route: '/sla-policies' },
   ],
 };
 
@@ -55,7 +54,8 @@ export class DashboardShell implements OnInit {
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
 
-  navOpen = signal(false);
+  navOpen = signal(false);           // mobile overlay
+  sidebarCollapsed = signal(false);  // desktop collapse (false = expanded)
   pageTitle = signal('');
   pageSubtitle = signal('');
 

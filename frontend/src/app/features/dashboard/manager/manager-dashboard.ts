@@ -29,17 +29,17 @@ export class ManagerDashboard implements OnInit {
     RESOLVED: 'Resolved', CLOSED: 'Closed',
   };
   readonly STATUS_COLOR: Record<string, string> = {
-    OPEN: '#9A968A', ASSIGNED: 'var(--blue)', IN_PROGRESS: 'var(--amber)',
-    RESOLVED: 'var(--teal)', CLOSED: '#B7B2A6',
+    OPEN: '#8A93A0', ASSIGNED: '#466177', IN_PROGRESS: '#C8881B',
+    RESOLVED: '#1A6B3C', CLOSED: '#AEB4BA',
   };
   readonly CAT_LABEL: Partial<Record<string, string>> = {
     IT_SUPPORT: 'IT Support', FACILITIES: 'Facilities', HR_REQUEST: 'HR Request',
   };
   readonly CAT_COLOR: Partial<Record<string, string>> = {
-    IT_SUPPORT: 'var(--blue)', FACILITIES: 'var(--amber)', HR_REQUEST: 'var(--teal)',
+    IT_SUPPORT: '#466177', FACILITIES: '#C8881B', HR_REQUEST: '#1A6B3C',
   };
   readonly PRIO_COLOR: Partial<Record<string, string>> = {
-    CRITICAL: 'var(--red)', HIGH: 'var(--amber)', MEDIUM: 'var(--blue)', LOW: '#9BA890',
+    CRITICAL: '#A32D2D', HIGH: '#C8881B', MEDIUM: '#466177', LOW: '#9BA890',
   };
 
   ngOnInit(): void {
@@ -73,7 +73,7 @@ export class ManagerDashboard implements OnInit {
   });
   readonly complianceColor = computed(() => {
     const p = this.compliancePct();
-    return p >= 80 ? 'var(--teal)' : p >= 60 ? 'var(--amber)' : 'var(--red)';
+    return p >= 80 ? 'var(--success)' : p >= 60 ? '#C8881B' : 'var(--danger)';
   });
   readonly donutCirc = 2 * Math.PI * 54;
   readonly donutOffset = computed(() => this.donutCirc * (1 - this.compliancePct() / 100));
@@ -161,6 +161,6 @@ export class ManagerDashboard implements OnInit {
   }
   slaCatColor(cat: string): string {
     const p = this.slaCatPct(cat);
-    return p >= 80 ? 'var(--teal)' : p >= 60 ? 'var(--amber)' : 'var(--red)';
+    return p >= 80 ? 'var(--success)' : p >= 60 ? '#C8881B' : 'var(--danger)';
   }
 }
