@@ -36,6 +36,20 @@ variable "jwt_secret" {
   sensitive = true
 }
 
+variable "mail_username" {
+  type = string
+}
+
+variable "mail_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "frontend_url" {
+  type    = string
+  default = ""
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
