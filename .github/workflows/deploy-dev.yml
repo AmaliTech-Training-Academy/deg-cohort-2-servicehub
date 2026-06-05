@@ -66,13 +66,15 @@ jobs:
             export DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
             export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+            export MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            export MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
             export BACKEND_IMAGE=${{ secrets.PROD_ECR_BACKEND_URL }}:dev-latest
             export FRONTEND_IMAGE=${{ secrets.PROD_ECR_FRONTEND_URL }}:dev-latest
             export ETL_IMAGE=${{ secrets.PROD_ECR_ETL_URL }}:dev-latest
 
-            printf "DB_URL=jdbc:postgresql://%s:5432/%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nJWT_SECRET=%s\nJWT_EXPIRATION_MS=86400000\nSPRING_PROFILES_ACTIVE=prod\nBACKEND_PORT=8080\nFRONTEND_PORT=80\nBACKEND_IMAGE=%s\nFRONTEND_IMAGE=%s\nETL_IMAGE=%s\n" \
+            printf "DB_URL=jdbc:postgresql://%s:5432/%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nJWT_SECRET=%s\nJWT_EXPIRATION_MS=86400000\nSPRING_PROFILES_ACTIVE=prod\nBACKEND_PORT=8080\nFRONTEND_PORT=80\nMAIL_USERNAME=%s\nMAIL_PASSWORD=%s\nFRONTEND_URL=http://54.76.146.247\nBACKEND_IMAGE=%s\nFRONTEND_IMAGE=%s\nETL_IMAGE=%s\n" \
               "${RDS_ENDPOINT}" "${DB_NAME}" "${DB_NAME}" "${DB_USERNAME}" "${DB_PASSWORD}" "${JWT_SECRET}" \
-              "${BACKEND_IMAGE}" "${FRONTEND_IMAGE}" "${ETL_IMAGE}" > /opt/app/.env
+              "${MAIL_USERNAME}" "${MAIL_PASSWORD}" "${BACKEND_IMAGE}" "${FRONTEND_IMAGE}" "${ETL_IMAGE}" > /opt/app/.env
 
             aws ecr get-login-password --region eu-west-1 | \
               docker login --username AWS --password-stdin ${{ secrets.PROD_ECR_BACKEND_URL }}

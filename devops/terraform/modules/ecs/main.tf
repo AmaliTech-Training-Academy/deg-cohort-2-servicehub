@@ -97,6 +97,13 @@ resource "aws_ssm_parameter" "jwt_secret" {
   tags  = var.tags
 }
 
+resource "aws_ssm_parameter" "mail_password" {
+  name  = "/${var.name}/mail_password"
+  type  = "SecureString"
+  value = var.mail_password
+  tags  = var.tags
+}
+
 # ── ECS Cluster ─────────────────────────────────────────────────────────────────
 resource "aws_ecs_cluster" "this" {
   name = "${var.name}-cluster"
@@ -270,12 +277,15 @@ resource "aws_ecs_task_definition" "backend" {
     environment = [
       { name = "DB_URL", value = "jdbc:postgresql://${var.db_address}:5432/${var.db_name}" },
       { name = "DB_USERNAME", value = var.db_username },
-      { name = "SERVER_PORT", value = "8080" }
+      { name = "SERVER_PORT", value = "8080" },
+      { name = "MAIL_USERNAME", value = var.mail_username },
+      { name = "FRONTEND_URL", value = var.frontend_url }
     ]
 
     secrets = [
       { name = "DB_PASSWORD", valueFrom = aws_ssm_parameter.db_password.arn },
-      { name = "JWT_SECRET", valueFrom = aws_ssm_parameter.jwt_secret.arn }
+      { name = "JWT_SECRET", valueFrom = aws_ssm_parameter.jwt_secret.arn },
+      { name = "MAIL_PASSWORD", valueFrom = aws_ssm_parameter.mail_password.arn }
     ]
 
     logConfiguration = {
