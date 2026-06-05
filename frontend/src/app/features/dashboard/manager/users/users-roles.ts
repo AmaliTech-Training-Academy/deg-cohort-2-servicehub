@@ -55,6 +55,9 @@ export class UsersRolesComponent implements OnInit {
 
   confirmPromote(u: UserRecord): void { this.pending.set(u); }
   cancelPromote(): void { this.pending.set(null); }
+  onScrimClick(event: Event): void {
+    if (event.target === event.currentTarget) this.cancelPromote();
+  }
 
   promote(): void {
     const u = this.pending();

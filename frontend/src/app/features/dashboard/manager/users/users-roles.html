@@ -47,8 +47,12 @@
 
 <!-- Promote confirmation modal -->
 @if (pending()) {
-  <div class="modal-scrim" (click)="cancelPromote()">
-    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <div class="modal-scrim"
+    role="button" tabindex="0" aria-label="Close dialog"
+    (click)="onScrimClick($event)"
+    (keydown.escape)="cancelPromote()"
+    (keydown.enter)="cancelPromote()">
+    <div class="modal" role="dialog" aria-modal="true">
       <div class="modal-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6l-8-3ZM9 12l2 2 4-4"/></svg>
       </div>
