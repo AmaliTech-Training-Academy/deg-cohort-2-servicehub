@@ -271,7 +271,7 @@ a { color: inherit; }
 
 /* ============ DATA LIST ============ */
 .data-list { overflow: hidden; }
-.dl-head, .dl-row { display: grid; align-items: center; gap: 14px; grid-template-columns: 84px minmax(120px,1fr) 92px 130px 116px; }
+.dl-head, .dl-row { display: grid; align-items: center; gap: 14px; grid-template-columns: 84px minmax(120px,1fr) 92px 130px minmax(130px, auto); }
 .dl-head { padding: 13px 16px; background: var(--navy); font-size: 13px; color: #fff; font-weight: 600; }
 .dl-row { padding: 14px 16px; border-top: 1px solid var(--border); font-size: 14px; text-align: left; width: 100%; transition: background .12s; background: none; }
 .dl-row:nth-child(even) { background: var(--bg); }
